@@ -394,13 +394,13 @@ const LabAPI=(()=>{
   }
   async function _me(){try{const r=await _r('/.netlify/functions/api?action=me');if(r.ok){const d=await r.json();_isOwner=d.isOwner;_perms=d.permissions||{};}}catch(e){}}
   function _r(url,opts={}){const t=_user?.token?.access_token;return fetch(url,{...opts,headers:{'Content-Type':'application/json',...(t?{'Authorization':`Bearer ${t}`}:{}),...(opts.headers||{})}});}
-  async function list(p){const r=await _r(`/api?action=list&path=${encodeURIComponent(p)}`);return r.ok?(await r.json()).items:[];}
-  async function listfiles(p){const r=await _r(`/api?action=listfiles&path=${encodeURIComponent(p)}`);return r.ok?(await r.json()).items:[];}
-  async function readfile(p){const r=await _r(`/api?action=readfile&path=${encodeURIComponent(p)}`);return r.ok?await r.json():{content:null,sha:null};}
-  async function writefile(p,content,sha){if(!_user){netlifyIdentity.open('login');return false;}const r=await _r('/api',{method:'POST',body:JSON.stringify({action:'writefile',path:p,content,sha})});return r.ok?await r.json():false;}
-  async function deletefile(p,sha){if(!_user){netlifyIdentity.open('login');return false;}const r=await _r('/api',{method:'POST',body:JSON.stringify({action:'deletefile',path:p,sha})});return r.ok;}
-  async function createfolder(p){if(!_user){netlifyIdentity.open('login');return false;}const r=await _r('/api',{method:'POST',body:JSON.stringify({action:'createfolder',path:p})});return r.ok;}
-  async function deletefolder(p){if(!_user){netlifyIdentity.open('login');return false;}const r=await _r('/api',{method:'POST',body:JSON.stringify({action:'deletefolder',path:p})});return r.ok;}
+  async function list(p){const r=await _r(`/.netlify/functions/api?action=list&path=${encodeURIComponent(p)}`);return r.ok?(await r.json()).items:[];}
+  async function listfiles(p){const r=await _r(`/.netlify/functions/api?action=listfiles&path=${encodeURIComponent(p)}`);return r.ok?(await r.json()).items:[];}
+  async function readfile(p){const r=await _r(`/.netlify/functions/api?action=readfile&path=${encodeURIComponent(p)}`);return r.ok?await r.json():{content:null,sha:null};}
+  async function writefile(p,content,sha){if(!_user){netlifyIdentity.open('login');return false;}const r=await _r('/.netlify/functions/api',{method:'POST',body:JSON.stringify({action:'writefile',path:p,content,sha})});return r.ok?await r.json():false;}
+  async function deletefile(p,sha){if(!_user){netlifyIdentity.open('login');return false;}const r=await _r('/.netlify/functions/api',{method:'POST',body:JSON.stringify({action:'deletefile',path:p,sha})});return r.ok;}
+  async function createfolder(p){if(!_user){netlifyIdentity.open('login');return false;}const r=await _r('/.netlify/functions/api',{method:'POST',body:JSON.stringify({action:'createfolder',path:p})});return r.ok;}
+  async function deletefolder(p){if(!_user){netlifyIdentity.open('login');return false;}const r=await _r('/.netlify/functions/api',{method:'POST',body:JSON.stringify({action:'deletefolder',path:p})});return r.ok;}
   async function readProjects(){
     try{const r=await _r('/.netlify/functions/api?key=projects');if(r.ok){const{data}=await r.json();if(data)return data;}}catch(e){}
     const c=localStorage.getItem('cache-projects')||localStorage.getItem('lab-projects');

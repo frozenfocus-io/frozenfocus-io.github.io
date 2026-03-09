@@ -420,7 +420,7 @@ const LabAPI = (() => {
   async function read(key,def=null){
     const cacheKey='cache-'+key;
     try{
-      const res=await _apiFetch(`/api?key=${key}`);
+      const res=await _apiFetch(`/.netlify/functions/api?key=${key}`);
       if(res.ok){const{data}=await res.json();if(data!==null){localStorage.setItem(cacheKey,JSON.stringify(data));return data;}}
     }catch(e){console.warn('API read failed, using cache');}
     const cached=localStorage.getItem(cacheKey);
@@ -435,7 +435,7 @@ const LabAPI = (() => {
     if(!_user){netlifyIdentity.open('login');return false;}
     localStorage.setItem('cache-'+key,JSON.stringify(data));
     try{
-      const res=await _apiFetch('/api',{method:'POST',body:JSON.stringify({key,data,projectId})});
+      const res=await _apiFetch('/.netlify/functions/api',{method:'POST',body:JSON.stringify({key,data,projectId})});
       if(!res.ok){const e=await res.json();console.error('Write failed:',e.error);return false;}
       return true;
     }catch(e){console.error('Write error:',e);return false;}
