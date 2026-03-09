@@ -374,6 +374,16 @@ const LabAPI = (() => {
     return def;
   }
 
+  async function list(p) {
+    try { const r = await _apiFetch(`/.netlify/functions/api?action=list&path=${encodeURIComponent(p)}`); return r.ok ? (await r.json()).items : []; } catch(e) { return []; }
+  }
+  async function listfiles(p) {
+    try { const r = await _apiFetch(`/.netlify/functions/api?action=listfiles&path=${encodeURIComponent(p)}`); return r.ok ? (await r.json()).items : []; } catch(e) { return []; }
+  }
+  async function readfile(p) {
+    try { const r = await _apiFetch(`/.netlify/functions/api?action=readfile&path=${encodeURIComponent(p)}`); return r.ok ? await r.json() : {content:null,sha:null}; } catch(e) { return {content:null,sha:null}; }
+  }
+
   async function write(key, data, projectId) {
     if (!_user) { netlifyIdentity.open('login'); return false; }
     // Optimistic cache update
@@ -400,7 +410,7 @@ const LabAPI = (() => {
   function login() { netlifyIdentity.open('login'); }
   function logout() { netlifyIdentity.logout(); }
 
-  return { init, read, write, canEdit, isOwner, getUser, login, logout };
+  return { init, read, write, list, listfiles, readfile, canEdit, isOwner, getUser, login, logout };
 })();
 
 // ═══════════════════════════════════════════
@@ -502,16 +512,25 @@ function renderProjects() {
 }
 
 async function renderKB() {
-  const kb = await LabAPI.read('kb', {categories:[],notes:[]});
   const g = document.getElementById('kb-grid');
-  if(!kb.categories||!kb.categories.length){
+  // Read categories from GitHub (real .md files)
+  const folders = await LabAPI.list('Knowledge-Base');
+  if (!folders.length) {
     g.innerHTML=`<div style="color:var(--text-dim);font-size:12px;grid-column:1/-1;">Noch keine Kategorien — <a href="kb.html" style="color:var(--accent);">Knowledge Base öffnen</a></div>`;
     return;
   }
-  g.innerHTML = kb.categories.map(cat=>{
-    const n=(kb.notes||[]).filter(x=>x.catId===cat.id).length;
-    return `<a href="kb.html" class="kb-card"><div class="kb-icon">${cat.icon}</div><div class="kb-title">${esc(cat.name)}</div><div class="kb-count"><span>${n}</span> Notiz${n!==1?'en':''}</div></a>`;
-  }).join('');
+  // Load note count per category
+  const cats = await Promise.all(folders.map(async f => {
+    const metaFile = await LabAPI.readfile(`${f.path}/__meta.json`);
+    let icon = '📝';
+    if (metaFile.content) { try { icon = JSON.parse(metaFile.content).icon || '📝'; } catch(e) {} }
+    const files = await LabAPI.listfiles(`Knowledge-Base/${f.name}`);
+    const noteCount = files.filter(x => x.name !== '__meta.json' && x.name !== '.gitkeep').length;
+    return { name: f.name, icon, noteCount };
+  }));
+  g.innerHTML = cats.map(cat =>
+    `<a href="kb.html" class="kb-card"><div class="kb-icon">${cat.icon}</div><div class="kb-title">${esc(cat.name)}</div><div class="kb-count"><span>${cat.noteCount}</span> Notiz${cat.noteCount!==1?'en':''}</div></a>`
+  ).join('');
 }
 
 function renderExport() {
@@ -619,23 +638,73 @@ function confirmDel(id){
 // ═══════════════════════════════════════════
 // EXPORT
 // ═══════════════════════════════════════════
-async function exportCtx(type){
-  const kb = await LabAPI.read('kb', {categories:[],notes:[]});
-  const docs = await LabAPI.read('docs', {entries:[]});
-  const now=new Date().toLocaleDateString('de-DE',{day:'2-digit',month:'long',year:'numeric'});
-  let md='';
-  if(type==='all'){
-    md+=`# lab.notes — Vollständiger Kontext\n*${now}*\n\n---\n\n## Meine Projekte\n\n`;
-    projects.forEach(p=>{md+=fmtProject(p);});
-    md+=`---\n\n## Knowledge Base\n\n`+fmtKB(kb,null)+`---\n\n## Docs\n\n`+fmtDocs(docs,null);
-    dl(md,'context-all.md');
+
+function parseFM(raw) {
+  if (!raw || !raw.startsWith('---')) return { meta: {}, content: raw || '' };
+  const end = raw.indexOf('\n---', 3); if (end === -1) return { meta: {}, content: raw };
+  const yaml = raw.slice(4, end); const content = raw.slice(end + 4).trimStart();
+  const meta = {};
+  yaml.split('\n').forEach(line => {
+    const c = line.indexOf(':'); if (c === -1) return;
+    const k = line.slice(0, c).trim(); const v = line.slice(c + 1).trim();
+    if (v.startsWith('[') && v.endsWith(']')) meta[k] = v.slice(1, -1).split(',').map(s => s.trim()).filter(Boolean);
+    else meta[k] = v;
+  });
+  return { meta, content };
+}
+
+async function loadKBFromGitHub() {
+  const folders = await LabAPI.list('Knowledge-Base');
+  const cats = await Promise.all(folders.map(async f => {
+    const metaFile = await LabAPI.readfile(`${f.path}/__meta.json`);
+    let icon = '📝', projectIds = [];
+    if (metaFile.content) { try { const m = JSON.parse(metaFile.content); icon = m.icon||'📝'; projectIds = m.projectIds||[]; } catch(e) {} }
+    const files = await LabAPI.listfiles(`Knowledge-Base/${f.name}`);
+    const notes = await Promise.all(
+      files.filter(x => x.name !== '__meta.json' && x.name !== '.gitkeep').map(async file => {
+        const r = await LabAPI.readfile(file.path);
+        const { meta, content } = parseFM(r.content || '');
+        return { title: meta.title || file.name.replace(/\.md$/, ''), tags: meta.tags || [], content };
+      })
+    );
+    return { name: f.name, icon, projectIds, notes };
+  }));
+  return cats;
+}
+
+async function loadDocsFromGitHub() {
+  const folders = await LabAPI.list('Docs');
+  const docs = [];
+  await Promise.all(folders.map(async f => {
+    const files = await LabAPI.listfiles(`Docs/${f.name}`);
+    await Promise.all(files.filter(x => x.name !== '.gitkeep').map(async file => {
+      const r = await LabAPI.readfile(file.path);
+      const { meta, content } = parseFM(r.content || '');
+      docs.push({ projectId: f.name, title: meta.title || file.name.replace(/\.md$/, ''), version: meta.version || '', date: meta.date || '', content });
+    }));
+  }));
+  return docs;
+}
+
+async function exportCtx(type) {
+  const now = new Date().toLocaleDateString('de-DE', {day:'2-digit', month:'long', year:'numeric'});
+  let md = '';
+
+  if (type === 'all') {
+    const [kbCats, docs] = await Promise.all([loadKBFromGitHub(), loadDocsFromGitHub()]);
+    md += `# lab.notes — Vollständiger Kontext\n*${now}*\n\n---\n\n## Meine Projekte\n\n`;
+    projects.forEach(p => { md += fmtProject(p); });
+    md += `---\n\n## Knowledge Base\n\n` + fmtKBNew(kbCats, null);
+    md += `---\n\n## Docs\n\n` + fmtDocsNew(docs, null);
+    dl(md, 'context-all.md');
   } else {
-    const p=projects.find(x=>x.id===type); if(!p)return;
-    md+=`# lab.notes — ${p.name}\n*${now}*\n\n---\n\n`+fmtProject(p);
-    const linked=(kb.categories||[]).filter(c=>c.projectIds&&c.projectIds.includes(p.id));
-    md+=`---\n\n## Verknüpfte KB-Notizen\n\n`+fmtKB(kb,linked.length>0?linked.map(c=>c.id):null);
-    md+=`---\n\n## Docs\n\n`+fmtDocs(docs,p.id);
-    dl(md,`context-${slugify(p.name)}.md`);
+    const p = projects.find(x => x.id === type); if (!p) return;
+    const [kbCats, docs] = await Promise.all([loadKBFromGitHub(), loadDocsFromGitHub()]);
+    md += `# lab.notes — ${p.name}\n*${now}*\n\n---\n\n` + fmtProject(p);
+    const linked = kbCats.filter(c => c.projectIds && c.projectIds.includes(p.id));
+    md += `---\n\n## Verknüpfte KB-Notizen\n\n` + fmtKBNew(linked.length > 0 ? linked : null, null, true);
+    md += `---\n\n## Docs\n\n` + fmtDocsNew(docs, p.id);
+    dl(md, `context-${slugify(p.name)}.md`);
   }
 }
 
@@ -647,22 +716,28 @@ function fmtProject(p){
   if(p.progress&&p.progress.length){o+=`**Fortschritt:**\n`;p.progress.forEach(s=>{o+=`- ${s.label}: ${s.pct}%\n`;});o+='\n';}
   return o;
 }
-function fmtKB(kb,f){
-  if(!kb.categories||!kb.categories.length)return '*Keine KB-Einträge vorhanden.*\n\n';
-  let o='';
-  kb.categories.forEach(cat=>{
-    if(f&&!f.includes(cat.id))return;
-    const notes=(kb.notes||[]).filter(n=>n.catId===cat.id);
-    if(!notes.length)return;
-    o+=`### ${cat.icon} ${cat.name}\n\n`;
-    notes.forEach(n=>{o+=`#### ${n.title}\n`;if(n.tags&&n.tags.length)o+=`*Tags: ${n.tags.join(', ')}*\n\n`;o+=`${n.content}\n\n`;});
+
+function fmtKBNew(cats, unused, alreadyFiltered) {
+  if (!cats || !cats.length) return '*Keine KB-Notizen verfügbar.*\n\n';
+  let o = '';
+  cats.forEach(cat => {
+    if (!cat.notes || !cat.notes.length) return;
+    o += `### ${cat.icon} ${cat.name}\n\n`;
+    cat.notes.forEach(n => {
+      o += `#### ${n.title}\n`;
+      if (n.tags && n.tags.length) o += `*Tags: ${n.tags.join(', ')}*\n\n`;
+      o += `${n.content}\n\n`;
+    });
   });
-  return o||'*Keine KB-Notizen verfügbar.*\n\n';
+  return o || '*Keine KB-Notizen verfügbar.*\n\n';
 }
-function fmtDocs(docs,projectId){
-  const entries=(docs.entries||[]).filter(e=>!projectId||e.projectId===projectId);
-  if(!entries.length)return '*Keine Docs-Einträge vorhanden.*\n\n';
-  return entries.map(e=>`### ${e.title} (${e.version||'v?'})\n${e.date?`*${e.date}*\n\n`:''}${e.notes||''}\n\n`).join('');
+
+function fmtDocsNew(docs, projectId) {
+  const entries = docs.filter(d => !projectId || d.projectId === projectId);
+  if (!entries.length) return '*Keine Docs-Einträge vorhanden.*\n\n';
+  return entries.map(d => `### ${d.title}${d.version ? ` (${d.version})` : ''}\n${d.date ? `*${d.date}*\n\n` : ''}${d.content}\n\n`).join('');
+}
+// fmtDocs replaced by fmtDocsNew above
 }
 
 // ═══════════════════════════════════════════
