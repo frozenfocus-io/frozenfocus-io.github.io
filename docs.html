@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Docs — lab.notes</title>
+  <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;0,700;1,300&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet" />
@@ -32,6 +33,10 @@
     .nav-links a{color:var(--text-mid);text-decoration:none;padding:6px 14px;border-radius:4px;font-size:12px;letter-spacing:.05em;transition:color .2s,background .2s}
     .nav-links a:hover,.nav-links a.active{color:var(--accent);background:rgba(41,224,127,.07)}
     .nav-status{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text-dim)}
+    .auth-btn{font-family:var(--font-mono);font-size:11px;padding:5px 12px;border-radius:4px;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text-dim);transition:all .2s}
+    .auth-btn:hover{color:var(--accent);border-color:var(--accent-dim)}
+    .auth-btn.logged-in{color:var(--accent);border-color:var(--accent-dim);background:rgba(41,224,127,.07)}
+    .auth-user{font-size:11px;color:var(--text-mid);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
     .status-dot{width:6px;height:6px;border-radius:50%;background:var(--accent);box-shadow:0 0 6px var(--accent);animation:pulse 2.4s ease-in-out infinite}
     @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
 
@@ -180,6 +185,10 @@
       <li><a href="kb.html">Knowledge Base</a></li>
     </ul>
     <div class="nav-status"><div class="status-dot"></div>aktiv</div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <span class="auth-user" id="auth-user-display"></span>
+      <button class="auth-btn" id="auth-btn" onclick="authAction()">Login</button>
+    </div>
   </div>
 </nav>
 
@@ -304,12 +313,67 @@
 <script>
 const DOC_ICONS = ['📐','⚡','🔌','📊','🛠️','📝','🔬','📦','🗂️','💾','🖥️','📡','🔧','⚙️','🧪','💡','📋','🗃️','📌','🔍'];
 
-function load(key, def) { try { const r=localStorage.getItem(key); return r?JSON.parse(r):def; } catch{return def;} }
-function save(key, val) { localStorage.setItem(key, JSON.stringify(val)); }
+// ── LAB API ──
+const LabAPI = (() => {
+  let _user = null, _isOwner = false, _perms = {};
+  async function init(onAuthChange) {
+    if (typeof netlifyIdentity === 'undefined') { onAuthChange(null); return; }
+    netlifyIdentity.on('login', async u => { netlifyIdentity.close(); _user = u; await _fetchMe(); onAuthChange(_user); });
+    netlifyIdentity.on('logout', () => { _user = null; _isOwner = false; _perms = {}; onAuthChange(null); });
+    netlifyIdentity.on('init', async u => { _user = u; if (u) await _fetchMe(); onAuthChange(_user); });
+    netlifyIdentity.init();
+  }
+  async function _fetchMe() {
+    try { const r = await _apiFetch('/api?action=me'); if (r.ok) { const d = await r.json(); _isOwner = d.isOwner; _perms = d.permissions||{}; } } catch(e) {}
+  }
+  function _apiFetch(url, opts={}) {
+    const token = _user?.token?.access_token;
+    return fetch(url, { ...opts, headers: { 'Content-Type':'application/json', ...(token?{'Authorization':`Bearer ${token}`}:{}), ...(opts.headers||{}) }});
+  }
+  async function read(key, def=null) {
+    try {
+      const r = await _apiFetch(`/api?key=${key}`);
+      if (r.ok) { const {data} = await r.json(); if (data !== null) { localStorage.setItem('cache-'+key, JSON.stringify(data)); return data; } }
+    } catch(e) {}
+    const cached = localStorage.getItem('cache-'+key);
+    if (cached) return JSON.parse(cached);
+    const legacyMap = {'projects':'lab-projects','kb':'kb-data','docs':'docs-data'};
+    const legacy = legacyMap[key] ? localStorage.getItem(legacyMap[key]) : null;
+    if (legacy) return JSON.parse(legacy);
+    return def;
+  }
+  async function write(key, d, projectId) {
+    if (!_user) { netlifyIdentity.open('login'); return false; }
+    localStorage.setItem('cache-'+key, JSON.stringify(d));
+    try {
+      const r = await _apiFetch('/api', { method:'POST', body: JSON.stringify({key, data:d, projectId}) });
+      return r.ok;
+    } catch(e) { return false; }
+  }
+  function canEdit(projectId) {
+    if (!_user) return false; if (_isOwner) return true;
+    const p = _perms[projectId]||_perms['*']; return p==='rw';
+  }
+  function isOwner() { return _isOwner; }
+  function getUser() { return _user; }
+  function login() { netlifyIdentity.open('login'); }
+  function logout() { netlifyIdentity.logout(); }
+  return { init, read, write, canEdit, isOwner, getUser, login, logout };
+})();
 
-function loadProjects() { return load('lab-projects', []); }
-function loadDocs()     { return load('docs-data', { entries: [] }); }
-function saveDocs(d)    { save('docs-data', d); }
+function authAction() { if (LabAPI.getUser()) LabAPI.logout(); else LabAPI.login(); }
+
+function updateAuthUI(user) {
+  const btn = document.getElementById('auth-btn');
+  const disp = document.getElementById('auth-user-display');
+  if (user) { btn.textContent='Logout'; btn.className='auth-btn logged-in'; disp.textContent=user.email; }
+  else { btn.textContent='Login'; btn.className='auth-btn'; disp.textContent=''; }
+  render();
+}
+
+async function loadProjects() { return await LabAPI.read('projects', []); }
+async function loadDocs()     { return await LabAPI.read('docs', { entries: [] }); }
+async function saveDocs(d)    { await LabAPI.write('docs', d); }
 
 let activeFilter = 'all';
 let editingDocId = null;
@@ -319,9 +383,9 @@ let pendingConfirm = null;
 let versionDocId = null;
 
 // ── RENDER ──
-function render() {
-  const projects = loadProjects();
-  const docs = loadDocs();
+async function render() {
+  const projects = await loadProjects();
+  const docs = await loadDocs();
   renderFilterBar(projects);
   renderContent(projects, docs);
   renderStats(docs);
@@ -466,9 +530,9 @@ function openAddDoc(projectId) {
   setTimeout(()=>document.getElementById('doc-title').focus(),100);
 }
 
-function openEditDoc(id) {
+async function openEditDoc(id) {
   editingDocId = id;
-  const docs = loadDocs();
+  const docs = await loadDocs();
   const e = (docs.entries||[]).find(x=>x.id===id);
   if(!e) return;
   editingProjectId = e.projectId;
@@ -492,10 +556,10 @@ function renderDocIconGrid() {
 
 function pickDocIcon(i) { selIcon=i; renderDocIconGrid(); }
 
-function saveDoc() {
+async function saveDoc() {
   const title = document.getElementById('doc-title').value.trim();
   if(!title){document.getElementById('doc-title').focus();return;}
-  const docs = loadDocs();
+  const docs = await loadDocs();
   const entry = {
     id: editingDocId || ('doc-'+Date.now()),
     projectId: editingProjectId,
@@ -515,19 +579,19 @@ function saveDoc() {
     if(!docs.entries) docs.entries=[];
     docs.entries.push(entry);
   }
-  saveDocs(docs);
+  await saveDocs(docs);
   closeModal('modal-doc');
   render();
 }
 
-function confirmDelDoc(id) {
-  const docs = loadDocs();
+async function confirmDelDoc(id) {
+  const docs = await loadDocs();
   const e = (docs.entries||[]).find(x=>x.id===id);
   document.getElementById('confirm-title').textContent = `"${e.title}" löschen?`;
   document.getElementById('confirm-sub').textContent = 'Dieses Dokument wird unwiderruflich entfernt.';
-  pendingConfirm = () => {
+  pendingConfirm = async () => {
     docs.entries = (docs.entries||[]).filter(x=>x.id!==id);
-    saveDocs(docs);
+    await saveDocs(docs);
     render();
   };
   document.getElementById('confirm-overlay').classList.add('open');
@@ -543,26 +607,26 @@ function openAddVersion(docId) {
   setTimeout(()=>document.getElementById('ver-tag').focus(),100);
 }
 
-function saveVersion() {
+async function saveVersion() {
   const tag = document.getElementById('ver-tag').value.trim();
   const msg = document.getElementById('ver-msg').value.trim();
   if(!tag){document.getElementById('ver-tag').focus();return;}
-  const docs = loadDocs();
+  const docs = await loadDocs();
   const e = (docs.entries||[]).find(x=>x.id===versionDocId);
   if(!e) return;
   if(!e.versions) e.versions=[];
   e.versions.unshift({ tag, msg, date: document.getElementById('ver-date').value.trim() });
-  saveDocs(docs);
+  await saveDocs(docs);
   closeModal('modal-version');
   render();
 }
 
-function delVersion(docId, idx) {
-  const docs = loadDocs();
+async function delVersion(docId, idx) {
+  const docs = await loadDocs();
   const e = (docs.entries||[]).find(x=>x.id===docId);
   if(!e||!e.versions) return;
   e.versions.splice(idx,1);
-  saveDocs(docs);
+  await saveDocs(docs);
   render();
 }
 
@@ -576,6 +640,7 @@ document.getElementById('confirm-ok').onclick=()=>{if(pendingConfirm)pendingConf
 document.querySelectorAll('.modal-overlay').forEach(el=>el.addEventListener('click',e=>{if(e.target===el)el.classList.remove('open');}));
 document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.modal-overlay.open,.confirm-overlay.open').forEach(el=>el.classList.remove('open'));});
 
+LabAPI.init(updateAuthUI);
 render();
 </script>
 </body>

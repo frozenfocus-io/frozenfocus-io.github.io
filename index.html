@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>lab.notes — EE Projects</title>
+  <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;0,700;1,300&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet" />
@@ -34,6 +35,11 @@
     .nav-status{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text-dim)}
     .status-dot{width:6px;height:6px;border-radius:50%;background:var(--accent);box-shadow:0 0 6px var(--accent);animation:pulse 2.4s ease-in-out infinite}
     @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+    .auth-btn{font-family:var(--font-mono);font-size:11px;padding:5px 12px;border-radius:4px;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text-dim);transition:all .2s;letter-spacing:.05em}
+    .auth-btn:hover{color:var(--accent);border-color:var(--accent-dim)}
+    .auth-btn.logged-in{color:var(--accent);border-color:var(--accent-dim);background:rgba(41,224,127,.07)}
+    .auth-user{font-size:11px;color:var(--text-mid);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .edit-only{display:none}
 
     .site-wrap{position:relative;z-index:1;max-width:1100px;margin:0 auto;padding:0 24px}
 
@@ -186,6 +192,10 @@
       <li><a href="kb.html">Knowledge Base</a></li>
     </ul>
     <div class="nav-status"><div class="status-dot"></div>aktiv</div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <span class="auth-user" id="auth-user-display"></span>
+      <button class="auth-btn" id="auth-btn" onclick="authAction()">Login</button>
+    </div>
   </div>
 </nav>
 
@@ -305,6 +315,97 @@
 </div>
 
 <script>
+// ═══════════════════════════════════════════
+// LAB API — shared auth + data layer
+// ═══════════════════════════════════════════
+const LabAPI = (() => {
+  let _user = null, _isOwner = false, _perms = {};
+
+  async function init(onAuthChange) {
+    if (typeof netlifyIdentity === 'undefined') { onAuthChange(null); return; }
+    netlifyIdentity.on('login', async u => {
+      netlifyIdentity.close(); _user = u;
+      await _fetchMe(); onAuthChange(_user);
+    });
+    netlifyIdentity.on('logout', () => {
+      _user = null; _isOwner = false; _perms = {};
+      onAuthChange(null);
+    });
+    netlifyIdentity.on('init', async u => {
+      _user = u;
+      if (u) await _fetchMe();
+      onAuthChange(_user);
+    });
+    netlifyIdentity.init();
+  }
+
+  async function _fetchMe() {
+    try {
+      const res = await _apiFetch('/api?action=me');
+      if (res.ok) { const d = await res.json(); _isOwner = d.isOwner; _perms = d.permissions || {}; }
+    } catch(e) { console.warn('fetchMe failed', e); }
+  }
+
+  function _apiFetch(url, opts = {}) {
+    const token = _user?.token?.access_token;
+    return fetch(url, { ...opts, headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+      ...(opts.headers || {})
+    }});
+  }
+
+  async function read(key, def = null) {
+    // Show cached immediately, fetch fresh in background
+    const cacheKey = 'cache-' + key;
+    try {
+      const res = await _apiFetch(`/api?key=${key}`);
+      if (res.ok) {
+        const { data } = await res.json();
+        if (data !== null) { localStorage.setItem(cacheKey, JSON.stringify(data)); return data; }
+      }
+    } catch(e) { console.warn('API read failed, using cache'); }
+    // Fall back to cache, then legacy localStorage key, then default
+    const cached = localStorage.getItem(cacheKey);
+    if (cached) return JSON.parse(cached);
+    const legacyMap = { 'projects': 'lab-projects', 'kb': 'kb-data', 'docs': 'docs-data' };
+    const legacy = legacyMap[key] ? localStorage.getItem(legacyMap[key]) : null;
+    if (legacy) return JSON.parse(legacy);
+    return def;
+  }
+
+  async function write(key, data, projectId) {
+    if (!_user) { netlifyIdentity.open('login'); return false; }
+    // Optimistic cache update
+    localStorage.setItem('cache-' + key, JSON.stringify(data));
+    try {
+      const res = await _apiFetch('/api', {
+        method: 'POST',
+        body: JSON.stringify({ key, data, projectId })
+      });
+      if (!res.ok) { const e = await res.json(); console.error('Write failed:', e.error); return false; }
+      return true;
+    } catch(e) { console.error('Write error:', e); return false; }
+  }
+
+  function canEdit(projectId) {
+    if (!_user) return false;
+    if (_isOwner) return true;
+    const perm = _perms[projectId] || _perms['*'];
+    return perm === 'rw';
+  }
+
+  function isOwner() { return _isOwner; }
+  function getUser() { return _user; }
+  function login() { netlifyIdentity.open('login'); }
+  function logout() { netlifyIdentity.logout(); }
+
+  return { init, read, write, canEdit, isOwner, getUser, login, logout };
+})();
+
+// ═══════════════════════════════════════════
+// DATA + STATE
+// ═══════════════════════════════════════════
 const ICONS = ['⚡','🔌','💾','📐','🛠️','🔬','🧪','🔋','🎛️','📡','🤖','🚁','🔧','🖥️','📦','⚙️','🔁','🧮','💡','🗂️'];
 
 const DEFAULT_PROJECTS = [
@@ -312,27 +413,48 @@ const DEFAULT_PROJECTS = [
     tags:['STM32','MOSFET','PWM','BLDC'],
     desc:'Entwicklung eines Electronic Speed Controllers für bürstenlose Motoren. Fokus auf 3-phasige Kommutierung, Gate-Driver-Schaltung und Firmware auf Basis eines Cortex-M4.',
     progress:[{label:'Konzept & Schaltungsdesign',pct:70},{label:'Gate-Driver & Power Stage',pct:30},{label:'Firmware / BLDC Kommutierung',pct:10},{label:'PCB Layout & Fertigung',pct:0}]},
-  { id:'proj-rc', icon:'📡', name:'RC-Empfänger', status:'planned', date:'Q3 2026',
-    tags:['RF','433 MHz'],
-    desc:'Eigenbau-Empfänger als Companion für den ESC. Evaluierung von 433 MHz vs. 2.4 GHz Protokollen.',
-    progress:[]},
-  { id:'proj-fc', icon:'🤖', name:'Custom Flight Controller', status:'planned', date:'später 2026',
-    tags:['KiCad','PCB','IMU'],
-    desc:'Eigenes PCB-Layout mit IMU-Integration und dediziertem Prozessor. Alles von Grund auf designed.',
-    progress:[]}
+  { id:'proj-rc', icon:'📡', name:'RC-Empfänger', status:'planned', date:'Q3 2026', tags:['RF','433 MHz'], desc:'Eigenbau-Empfänger als Companion für den ESC.', progress:[]},
+  { id:'proj-fc', icon:'🤖', name:'Custom Flight Controller', status:'planned', date:'später 2026', tags:['KiCad','PCB','IMU'], desc:'Eigenes PCB-Layout mit IMU-Integration.', progress:[]}
 ];
 
-function load(key, def) { try { const r=localStorage.getItem(key); return r?JSON.parse(r):def; } catch{return def;} }
-function save(key, val) { localStorage.setItem(key, JSON.stringify(val)); }
-
-let projects = load('lab-projects', JSON.parse(JSON.stringify(DEFAULT_PROJECTS)));
+let projects = [];
 let editingId = null, selIcon = '⚡', pendingConfirm = null, pRows = [];
 
-// ── RENDER ──
-function render() {
+// ═══════════════════════════════════════════
+// AUTH UI
+// ═══════════════════════════════════════════
+function updateAuthUI(user) {
+  const btn = document.getElementById('auth-btn');
+  const disp = document.getElementById('auth-user-display');
+  if (user) {
+    btn.textContent = 'Logout';
+    btn.className = 'auth-btn logged-in';
+    disp.textContent = user.email;
+  } else {
+    btn.textContent = 'Login';
+    btn.className = 'auth-btn';
+    disp.textContent = '';
+  }
+  // Show/hide edit controls based on owner status
+  document.querySelectorAll('.edit-only').forEach(el => {
+    el.style.display = LabAPI.isOwner() ? '' : 'none';
+  });
+  render();
+}
+
+function authAction() {
+  if (LabAPI.getUser()) LabAPI.logout();
+  else LabAPI.login();
+}
+
+// ═══════════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════════
+async function render() {
+  projects = await LabAPI.read('projects', DEFAULT_PROJECTS);
   renderHero();
   renderProjects();
-  renderKB();
+  await renderKB();
   renderExport();
 }
 
@@ -346,6 +468,7 @@ function renderHero() {
 }
 
 function renderProjects() {
+  const canEdit = LabAPI.isOwner();
   document.getElementById('projects-grid').innerHTML = projects.map(p=>`
     <div class="project-card fade-in">
       <span class="card-tag ${p.status}">${statusLabel(p.status)}</span>
@@ -354,7 +477,7 @@ function renderProjects() {
       <div class="card-desc">${esc(p.desc||'')}</div>
       <div class="card-footer">
         <span class="card-date">${esc(p.date||'')}</span>
-        <div class="card-actions">
+        <div class="card-actions" style="${canEdit?'':'display:none'}">
           <button class="card-btn card-btn-edit" onclick="openEdit('${p.id}')">✎</button>
           <button class="card-btn card-btn-del" onclick="confirmDel('${p.id}')">✕</button>
         </div>
@@ -372,10 +495,14 @@ function renderProjects() {
       `).join('')}
     </div>
   `).join('');
+
+  // Show/hide "Neues Projekt" button
+  const addBtn = document.querySelector('.section-action[onclick="openAddProject()"]');
+  if (addBtn) addBtn.style.display = canEdit ? '' : 'none';
 }
 
-function renderKB() {
-  const kb = load('kb-data', {categories:[],notes:[]});
+async function renderKB() {
+  const kb = await LabAPI.read('kb', {categories:[],notes:[]});
   const g = document.getElementById('kb-grid');
   if(!kb.categories||!kb.categories.length){
     g.innerHTML=`<div style="color:var(--text-dim);font-size:12px;grid-column:1/-1;">Noch keine Kategorien — <a href="kb.html" style="color:var(--accent);">Knowledge Base öffnen</a></div>`;
@@ -407,10 +534,13 @@ function renderExport() {
   g.innerHTML = h;
 }
 
-// ── PROJECT CRUD ──
+// ═══════════════════════════════════════════
+// PROJECT CRUD
+// ═══════════════════════════════════════════
 function statusLabel(s){return s==='wip'?'⚡ In Arbeit':s==='done'?'✓ Fertig':'○ Geplant';}
 
 function openAddProject(){
+  if(!LabAPI.isOwner()){LabAPI.login();return;}
   editingId=null; selIcon='⚡'; pRows=[{label:'',pct:0}];
   document.getElementById('modal-project-title').textContent='Neues Projekt';
   ['proj-name','proj-date','proj-tags','proj-desc'].forEach(id=>document.getElementById(id).value='');
@@ -421,6 +551,7 @@ function openAddProject(){
 }
 
 function openEdit(id){
+  if(!LabAPI.isOwner()){LabAPI.login();return;}
   editingId=id;
   const p=projects.find(x=>x.id===id);
   selIcon=p.icon; pRows=(p.progress||[]).map(r=>({...r}));
@@ -454,7 +585,7 @@ function renderPEditor(){
 function addProgressRow(){pRows.push({label:'',pct:0});renderPEditor();}
 function rmPRow(i){pRows.splice(i,1);renderPEditor();}
 
-function saveProject(){
+async function saveProject(){
   const name=document.getElementById('proj-name').value.trim();
   if(!name){document.getElementById('proj-name').focus();return;}
   const p={
@@ -468,7 +599,7 @@ function saveProject(){
   };
   if(editingId){const i=projects.findIndex(x=>x.id===editingId);projects[i]=p;}
   else projects.push(p);
-  save('lab-projects',projects);
+  await LabAPI.write('projects', projects);
   closeModal('modal-project');
   render();
 }
@@ -477,37 +608,33 @@ function confirmDel(id){
   const p=projects.find(x=>x.id===id);
   document.getElementById('confirm-title').textContent=`"${p.name}" löschen?`;
   document.getElementById('confirm-sub').textContent='Das Projekt wird unwiderruflich entfernt. KB-Notizen und Docs bleiben erhalten.';
-  pendingConfirm=()=>{projects=projects.filter(x=>x.id!==id);save('lab-projects',projects);render();};
+  pendingConfirm=async()=>{
+    projects=projects.filter(x=>x.id!==id);
+    await LabAPI.write('projects', projects);
+    render();
+  };
   document.getElementById('confirm-overlay').classList.add('open');
 }
 
-// ── EXPORT ──
-function exportCtx(type){
-  const kb=load('kb-data',{categories:[],notes:[]});
-  const docs=load('docs-data',{entries:[]});
+// ═══════════════════════════════════════════
+// EXPORT
+// ═══════════════════════════════════════════
+async function exportCtx(type){
+  const kb = await LabAPI.read('kb', {categories:[],notes:[]});
+  const docs = await LabAPI.read('docs', {entries:[]});
   const now=new Date().toLocaleDateString('de-DE',{day:'2-digit',month:'long',year:'numeric'});
   let md='';
-
   if(type==='all'){
-    md+=`# lab.notes — Vollständiger Kontext\n*${now}*\n\n---\n\n`;
-    md+=`## Meine Projekte\n\n`;
+    md+=`# lab.notes — Vollständiger Kontext\n*${now}*\n\n---\n\n## Meine Projekte\n\n`;
     projects.forEach(p=>{md+=fmtProject(p);});
-    md+=`---\n\n## Knowledge Base\n\n`;
-    md+=fmtKB(kb,null);
-    md+=`---\n\n## Docs\n\n`;
-    md+=fmtDocs(docs,null);
+    md+=`---\n\n## Knowledge Base\n\n`+fmtKB(kb,null)+`---\n\n## Docs\n\n`+fmtDocs(docs,null);
     dl(md,'context-all.md');
   } else {
-    const p=projects.find(x=>x.id===type);
-    if(!p)return;
-    md+=`# lab.notes — ${p.name}\n*${now}*\n\n---\n\n`;
-    md+=fmtProject(p);
-    md+=`---\n\n## Verknüpfte KB-Notizen\n\n`;
-    // KB categories linked to this project via projectIds field
+    const p=projects.find(x=>x.id===type); if(!p)return;
+    md+=`# lab.notes — ${p.name}\n*${now}*\n\n---\n\n`+fmtProject(p);
     const linked=(kb.categories||[]).filter(c=>c.projectIds&&c.projectIds.includes(p.id));
-    md+=fmtKB(kb, linked.length>0 ? linked.map(c=>c.id) : null);
-    md+=`---\n\n## Docs\n\n`;
-    md+=fmtDocs(docs,p.id);
+    md+=`---\n\n## Verknüpfte KB-Notizen\n\n`+fmtKB(kb,linked.length>0?linked.map(c=>c.id):null);
+    md+=`---\n\n## Docs\n\n`+fmtDocs(docs,p.id);
     dl(md,`context-${slugify(p.name)}.md`);
   }
 }
@@ -520,31 +647,27 @@ function fmtProject(p){
   if(p.progress&&p.progress.length){o+=`**Fortschritt:**\n`;p.progress.forEach(s=>{o+=`- ${s.label}: ${s.pct}%\n`;});o+='\n';}
   return o;
 }
-
-function fmtKB(kb,catIdFilter){
+function fmtKB(kb,f){
   if(!kb.categories||!kb.categories.length)return '*Keine KB-Einträge vorhanden.*\n\n';
   let o='';
   kb.categories.forEach(cat=>{
-    if(catIdFilter&&!catIdFilter.includes(cat.id))return;
+    if(f&&!f.includes(cat.id))return;
     const notes=(kb.notes||[]).filter(n=>n.catId===cat.id);
     if(!notes.length)return;
     o+=`### ${cat.icon} ${cat.name}\n\n`;
-    notes.forEach(n=>{
-      o+=`#### ${n.title}\n`;
-      if(n.tags&&n.tags.length)o+=`*Tags: ${n.tags.join(', ')}*\n\n`;
-      o+=`${n.content}\n\n`;
-    });
+    notes.forEach(n=>{o+=`#### ${n.title}\n`;if(n.tags&&n.tags.length)o+=`*Tags: ${n.tags.join(', ')}*\n\n`;o+=`${n.content}\n\n`;});
   });
   return o||'*Keine KB-Notizen verfügbar.*\n\n';
 }
-
 function fmtDocs(docs,projectId){
   const entries=(docs.entries||[]).filter(e=>!projectId||e.projectId===projectId);
   if(!entries.length)return '*Keine Docs-Einträge vorhanden.*\n\n';
   return entries.map(e=>`### ${e.title} (${e.version||'v?'})\n${e.date?`*${e.date}*\n\n`:''}${e.notes||''}\n\n`).join('');
 }
 
-// ── UTILS ──
+// ═══════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════
 function slugify(s){return s.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');}
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function dl(content,filename){const b=new Blob([content],{type:'text/markdown;charset=utf-8'});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=filename;a.click();URL.revokeObjectURL(u);}
@@ -556,7 +679,6 @@ document.getElementById('confirm-ok').onclick=()=>{if(pendingConfirm)pendingConf
 document.querySelectorAll('.modal-overlay').forEach(el=>el.addEventListener('click',e=>{if(e.target===el)el.classList.remove('open');}));
 document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.modal-overlay.open,.confirm-overlay.open').forEach(el=>el.classList.remove('open'));});
 
-// Nav highlight
 document.querySelectorAll('section[id]').forEach(s=>{
   new IntersectionObserver(entries=>{
     entries.forEach(e=>{
@@ -569,7 +691,8 @@ document.querySelectorAll('section[id]').forEach(s=>{
   },{threshold:0.3}).observe(s);
 });
 
-render();
+// Init
+LabAPI.init(updateAuthUI);
 </script>
 </body>
 </html>

@@ -1,0 +1,8 @@
+{
+  "name": "labnotes-site",
+  "version": "1.0.0",
+  "description": "lab.notes — EE Engineering Journal",
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

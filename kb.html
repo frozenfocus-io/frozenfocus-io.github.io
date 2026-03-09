@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Knowledge Base — lab.notes</title>
+  <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;0,700;1,300&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet" />
@@ -97,6 +98,10 @@
     }
 
     .nav-status { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--text-dim); }
+    .auth-btn{font-family:var(--font-mono);font-size:11px;padding:5px 12px;border-radius:4px;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text-dim);transition:all .2s}
+    .auth-btn:hover{color:var(--accent);border-color:var(--accent-dim)}
+    .auth-btn.logged-in{color:var(--accent);border-color:var(--accent-dim);background:rgba(41,224,127,.07)}
+    .auth-user{font-size:11px;color:var(--text-mid);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
     .status-dot {
       width: 6px; height: 6px; border-radius: 50%;
@@ -517,6 +522,10 @@
       <div class="status-dot"></div>
       aktiv
     </div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <span class="auth-user" id="auth-user-display"></span>
+      <button class="auth-btn" id="auth-btn" onclick="authAction()">Login</button>
+    </div>
   </div>
 </nav>
 
@@ -680,13 +689,14 @@
 
   function loadData() {
     try {
-      const raw = localStorage.getItem('kb-data');
+      const raw = localStorage.getItem('cache-kb') || localStorage.getItem('kb-data');
       return raw ? JSON.parse(raw) : JSON.parse(JSON.stringify(DEFAULT_DATA));
     } catch { return JSON.parse(JSON.stringify(DEFAULT_DATA)); }
   }
 
-  function saveData(data) {
-    localStorage.setItem('kb-data', JSON.stringify(data));
+  async function saveData(d) {
+    localStorage.setItem('cache-kb', JSON.stringify(d));
+    await LabAPI.write('kb', d);
   }
 
   let data = loadData();
@@ -698,13 +708,12 @@
   let viewingNoteId = null;
   let selectedProjectIds = [];
 
-  function loadProjects() {
-    try { const r = localStorage.getItem('lab-projects'); return r ? JSON.parse(r) : []; }
-    catch { return []; }
+  async function loadProjects() {
+    return await LabAPI.read('projects', []);
   }
 
-  function renderProjectPicker(currentIds) {
-    const projects = loadProjects();
+  async function renderProjectPicker(currentIds) {
+    const projects = await loadProjects();
     const picker = document.getElementById('cat-project-picker');
     if (!projects.length) {
       picker.innerHTML = `<span style="font-size:11px;color:var(--text-dim);">Keine Projekte vorhanden — erst auf der Homepage anlegen.</span>`;
@@ -1011,12 +1020,89 @@
     return `${parseInt(day)} ${months[parseInt(m)-1]} ${y}`;
   }
 
-  // ── INIT ──
-  render();
-  if (data.categories.length > 0) {
-    activeCatId = data.categories[0].id;
+  // ── LAB API ──
+  const LabAPI = (() => {
+    let _user = null, _isOwner = false, _perms = {};
+    async function init(onAuthChange) {
+      if (typeof netlifyIdentity === 'undefined') { onAuthChange(null); return; }
+      netlifyIdentity.on('login', async u => { netlifyIdentity.close(); _user = u; await _fetchMe(); onAuthChange(_user); });
+      netlifyIdentity.on('logout', () => { _user = null; _isOwner = false; _perms = {}; onAuthChange(null); });
+      netlifyIdentity.on('init', async u => { _user = u; if (u) await _fetchMe(); onAuthChange(_user); });
+      netlifyIdentity.init();
+    }
+    async function _fetchMe() {
+      try { const r = await _apiFetch('/api?action=me'); if (r.ok) { const d = await r.json(); _isOwner = d.isOwner; _perms = d.permissions||{}; } } catch(e) {}
+    }
+    function _apiFetch(url, opts={}) {
+      const token = _user?.token?.access_token;
+      return fetch(url, { ...opts, headers: { 'Content-Type':'application/json', ...(token?{'Authorization':`Bearer ${token}`}:{}), ...(opts.headers||{}) }});
+    }
+    async function read(key, def=null) {
+      try {
+        const r = await _apiFetch(`/api?key=${key}`);
+        if (r.ok) { const {data} = await r.json(); if (data !== null) { localStorage.setItem('cache-'+key, JSON.stringify(data)); return data; } }
+      } catch(e) {}
+      const cached = localStorage.getItem('cache-'+key);
+      if (cached) return JSON.parse(cached);
+      const legacyMap = {'projects':'lab-projects','kb':'kb-data','docs':'docs-data'};
+      const legacy = legacyMap[key] ? localStorage.getItem(legacyMap[key]) : null;
+      if (legacy) return JSON.parse(legacy);
+      return def;
+    }
+    async function write(key, d, projectId) {
+      if (!_user) { netlifyIdentity.open('login'); return false; }
+      localStorage.setItem('cache-'+key, JSON.stringify(d));
+      try {
+        const r = await _apiFetch('/api', { method:'POST', body: JSON.stringify({key, data:d, projectId}) });
+        return r.ok;
+      } catch(e) { return false; }
+    }
+    function canEdit(projectId) {
+      if (!_user) return false; if (_isOwner) return true;
+      const p = _perms[projectId]||_perms['*']; return p==='rw';
+    }
+    function isOwner() { return _isOwner; }
+    function getUser() { return _user; }
+    function login() { netlifyIdentity.open('login'); }
+    function logout() { netlifyIdentity.logout(); }
+    return { init, read, write, canEdit, isOwner, getUser, login, logout };
+  })();
+
+  function updateAuthUI(user) {
+    const btn = document.getElementById('auth-btn');
+    const disp = document.getElementById('auth-user-display');
+    if (user) { btn.textContent='Logout'; btn.className='auth-btn logged-in'; disp.textContent=user.email; }
+    else { btn.textContent='Login'; btn.className='auth-btn'; disp.textContent=''; }
+    // Show/hide add-category and edit buttons based on auth
+    const canEdit = LabAPI.isOwner();
+    document.querySelectorAll('.cat-action-btn, .btn.btn-primary[onclick*="openAdd"]').forEach(el => {
+      el.style.display = canEdit ? '' : 'none';
+    });
+    // Re-render to show/hide note edit buttons
     render();
   }
+
+  function authAction() {
+    if (LabAPI.getUser()) LabAPI.logout(); else LabAPI.login();
+  }
+
+  // ── INIT ──
+  async function initApp() {
+    // Load fresh data from API
+    const freshData = await LabAPI.read('kb', null);
+    if (freshData) {
+      data = freshData;
+      localStorage.setItem('cache-kb', JSON.stringify(data));
+    }
+    render();
+    if (data.categories.length > 0) {
+      activeCatId = data.categories[0].id;
+      render();
+    }
+  }
+
+  LabAPI.init(updateAuthUI);
+  initApp();
 </script>
 </body>
 </html>
