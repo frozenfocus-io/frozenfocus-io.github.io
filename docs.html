@@ -1,151 +1,150 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
   <title>Docs — lab.notes</title>
-  <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;0,700;1,300&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <script defer src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;0,700;1,300&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet"/>
   <style>
-    :root {
-      --bg:#07090a; --bg-raised:#0d1114; --bg-card:#101518;
-      --border:#1c2830; --border-hi:#2a404e;
-      --accent:#29e07f; --accent-dim:#1a6e43;
-      --amber:#f0a843; --red:#e05a5a; --red-dim:#5a1a1a;
-      --text:#dde8e2; --text-mid:#7a9e8e; --text-dim:#3a5548;
+    :root{
+      --bg:#07090a;--bg-raised:#0d1114;--bg-card:#101518;
+      --border:#1c2830;--border-hi:#2a404e;
+      --accent:#29e07f;--accent-dim:#1a6e43;
+      --amber:#f0a843;--red:#e05a5a;--red-dim:#5a1a1a;
+      --text:#dde8e2;--text-mid:#7a9e8e;--text-dim:#3a5548;
       --scan:rgba(0,255,120,0.015);
       --font-mono:'JetBrains Mono',monospace;
       --font-dis:'Syne',sans-serif;
+      --nav-h:56px;
     }
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-    html{scroll-behavior:smooth}
     body{background:var(--bg);color:var(--text);font-family:var(--font-mono);font-size:14px;line-height:1.7;min-height:100vh;overflow-x:hidden}
-    body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,var(--scan) 2px,var(--scan) 4px);pointer-events:none;z-index:100}
-    body::after{content:'';position:fixed;inset:0;background-image:linear-gradient(var(--border) 1px,transparent 1px),linear-gradient(90deg,var(--border) 1px,transparent 1px);background-size:40px 40px;opacity:.35;pointer-events:none;z-index:0}
+    body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,var(--scan) 2px,var(--scan) 4px);pointer-events:none;z-index:100;will-change:transform}
+    @media(min-width:769px){
+      body::after{content:'';position:fixed;inset:0;background-image:linear-gradient(var(--border) 1px,transparent 1px),linear-gradient(90deg,var(--border) 1px,transparent 1px);background-size:40px 40px;opacity:.35;pointer-events:none;z-index:0}
+    }
 
-    nav{position:sticky;top:0;z-index:50;background:rgba(7,9,10,.85);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:0 24px}
-    .nav-inner{max-width:1100px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;height:56px}
-    .nav-logo{font-family:var(--font-dis);font-weight:800;font-size:17px;letter-spacing:-.5px;color:var(--accent);text-decoration:none;display:flex;align-items:center;gap:8px}
+    /* ── NAV ── */
+    nav{position:sticky;top:0;z-index:50;background:rgba(7,9,10,.9);backdrop-filter:blur(12px);border-bottom:1px solid var(--border)}
+    .nav-inner{max-width:1100px;margin:0 auto;display:flex;align-items:center;gap:8px;height:var(--nav-h);padding:0 16px}
+    .nav-logo{font-family:var(--font-dis);font-weight:800;font-size:17px;letter-spacing:-.5px;color:var(--accent);text-decoration:none;display:flex;align-items:center;gap:8px;flex-shrink:0}
     .nav-logo span{color:var(--text-mid);font-weight:400;font-size:13px;font-family:var(--font-mono)}
+    .nav-spacer{flex:1}
     .nav-links{display:flex;gap:2px;list-style:none}
-    .nav-links a{color:var(--text-mid);text-decoration:none;padding:6px 14px;border-radius:4px;font-size:12px;letter-spacing:.05em;transition:color .2s,background .2s}
+    .nav-links a{color:var(--text-mid);text-decoration:none;padding:6px 14px;border-radius:4px;font-size:12px;transition:color .2s,background .2s;white-space:nowrap}
     .nav-links a:hover,.nav-links a.active{color:var(--accent);background:rgba(41,224,127,.07)}
-    .nav-status{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text-dim)}
-    .auth-btn{font-family:var(--font-mono);font-size:11px;padding:5px 12px;border-radius:4px;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text-dim);transition:all .2s}
+    .status-dot{width:6px;height:6px;border-radius:50%;background:var(--accent);box-shadow:0 0 6px var(--accent);animation:pulse 2.4s infinite;flex-shrink:0}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+    .nav-auth{display:flex;align-items:center;gap:8px;flex-shrink:0}
+    .auth-user{font-size:11px;color:var(--text-mid);max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .auth-btn{font-family:var(--font-mono);font-size:11px;padding:5px 12px;border-radius:4px;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text-dim);transition:all .2s;white-space:nowrap}
     .auth-btn:hover{color:var(--accent);border-color:var(--accent-dim)}
     .auth-btn.logged-in{color:var(--accent);border-color:var(--accent-dim);background:rgba(41,224,127,.07)}
-    .auth-user{font-size:11px;color:var(--text-mid);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-    .status-dot{width:6px;height:6px;border-radius:50%;background:var(--accent);box-shadow:0 0 6px var(--accent);animation:pulse 2.4s ease-in-out infinite}
-    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+    .nav-ham{display:none;flex-direction:column;justify-content:center;gap:5px;width:32px;height:32px;background:transparent;border:1px solid var(--border);border-radius:4px;cursor:pointer;padding:6px;flex-shrink:0;transition:border-color .2s}
+    .nav-ham:hover{border-color:var(--border-hi)}
+    .nav-ham span{display:block;height:1px;background:var(--text-mid);transition:all .25s}
+    .nav-ham.open span:nth-child(1){transform:translateY(6px) rotate(45deg)}
+    .nav-ham.open span:nth-child(2){opacity:0}
+    .nav-ham.open span:nth-child(3){transform:translateY(-6px) rotate(-45deg)}
+    .nav-mobile{display:none;position:absolute;top:var(--nav-h);left:0;right:0;background:rgba(7,9,10,.97);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);z-index:49;padding:8px 16px 16px}
+    .nav-mobile.open{display:block}
+    .nav-mobile .nav-links{flex-direction:column;gap:2px}
+    .nav-mobile .nav-links a{padding:10px 12px;font-size:13px}
+    .nav-mobile-auth{display:flex;align-items:center;gap:8px;padding:12px 12px 0;border-top:1px solid var(--border);margin-top:8px}
 
+    /* ── LAYOUT ── */
     .site-wrap{position:relative;z-index:1;max-width:1100px;margin:0 auto;padding:0 24px}
+    .page-header{padding:40px 0 28px;border-bottom:1px solid var(--border);margin-bottom:28px;display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:16px}
+    .page-title{font-family:var(--font-dis);font-size:26px;font-weight:800;color:var(--text);letter-spacing:-1px}
+    .page-title .hl{color:var(--accent)}
+    .page-meta{font-size:12px;color:var(--text-dim);display:flex;gap:20px;flex-wrap:wrap}
+    .page-meta span b{color:var(--text-mid)}
 
-    .page-header{padding:48px 0 32px;border-bottom:1px solid var(--border);display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:0}
-    .breadcrumb{font-size:11px;color:var(--text-dim);margin-bottom:10px;display:flex;align-items:center;gap:8px}
-    .breadcrumb a{color:var(--text-dim);text-decoration:none}
-    .breadcrumb a:hover{color:var(--accent)}
-    .page-title{font-family:var(--font-dis);font-size:28px;font-weight:800;letter-spacing:-1px;color:var(--text)}
-    .page-sub{font-size:12px;color:var(--text-mid);margin-top:4px}
+    /* ── FILTER BAR ── */
+    .filter-bar{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:24px;align-items:center}
+    .filter-pill{font-family:var(--font-mono);font-size:11px;padding:5px 12px;border-radius:20px;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text-dim);transition:all .2s;white-space:nowrap}
+    .filter-pill:hover{color:var(--text-mid);border-color:var(--border-hi)}
+    .filter-pill.active{color:var(--accent);border-color:var(--accent-dim);background:rgba(41,224,127,.07)}
 
-    .filter-bar{display:flex;gap:8px;flex-wrap:wrap;padding:20px 0;border-bottom:1px solid var(--border);margin-bottom:40px;align-items:center}
-    .filter-label{font-size:11px;color:var(--text-dim);margin-right:4px}
-    .filter-btn{font-family:var(--font-mono);font-size:11px;color:var(--text-mid);background:transparent;border:1px solid var(--border);border-radius:4px;padding:4px 12px;cursor:pointer;transition:all .2s;letter-spacing:.05em}
-    .filter-btn:hover,.filter-btn.active{color:var(--accent);border-color:var(--accent-dim);background:rgba(41,224,127,.07)}
+    /* ── DOCS LIST ── */
+    .project-section{margin-bottom:36px}
+    .project-section-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--border)}
+    .project-section-title{font-family:var(--font-dis);font-size:15px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:8px}
+    .docs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(300px,100%),1fr));gap:10px}
+    .doc-card{background:var(--bg-card);border:1px solid var(--border);border-radius:6px;padding:16px 18px;cursor:pointer;transition:border-color .2s;position:relative}
+    .doc-card:hover{border-color:var(--border-hi)}
+    .doc-card-top{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+    .doc-icon{font-size:20px;flex-shrink:0}
+    .doc-title{font-family:var(--font-dis);font-size:14px;font-weight:700;color:var(--text)}
+    .doc-version{font-size:10px;color:var(--accent);border:1px solid var(--accent-dim);border-radius:3px;padding:1px 6px;margin-left:auto;flex-shrink:0}
+    .doc-preview{font-size:11px;color:var(--text-mid);line-height:1.7;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+    .doc-footer{display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding-top:8px;border-top:1px solid var(--border)}
+    .doc-tags{display:flex;gap:4px;flex-wrap:wrap}
+    .doc-tag{font-size:10px;color:var(--text-dim);border:1px solid var(--border);border-radius:3px;padding:1px 6px}
+    .doc-date{font-size:10px;color:var(--text-dim)}
+    .doc-badge{font-size:9px;font-weight:700;letter-spacing:.08em;padding:2px 6px;border-radius:3px;text-transform:uppercase}
+    .doc-badge.neu{background:rgba(41,224,127,.12);color:var(--accent);border:1px solid var(--accent-dim)}
+    .doc-badge.update{background:rgba(240,168,67,.1);color:var(--amber);border:1px solid #6b4a18}
+    .doc-card-actions{position:absolute;top:10px;right:10px;display:flex;gap:4px;opacity:0;transition:opacity .15s}
+    .doc-card:hover .doc-card-actions{opacity:1}
+    .doc-action-btn{width:22px;height:22px;border-radius:3px;background:var(--bg-raised);border:1px solid var(--border);color:var(--text-dim);cursor:pointer;font-size:11px;display:flex;align-items:center;justify-content:center;transition:all .15s}
+    .doc-action-btn.edit:hover{color:var(--amber)}
+    .doc-action-btn.del:hover{color:var(--red)}
 
-    .project-group{margin-bottom:56px}
-    .group-header{display:flex;align-items:center;gap:16px;margin-bottom:20px}
-    .group-tag{font-size:10px;letter-spacing:.12em;text-transform:uppercase;border-radius:3px;padding:2px 8px;border:1px solid}
-    .group-tag.wip{color:var(--amber);background:rgba(240,168,67,.08);border-color:#6b4a18}
-    .group-tag.planned{color:var(--text-mid);background:transparent;border-color:var(--border)}
-    .group-tag.done{color:var(--accent);background:rgba(41,224,127,.08);border-color:var(--accent-dim)}
-    .group-title{font-family:var(--font-dis);font-size:18px;font-weight:700;color:var(--text);letter-spacing:-.3px}
-    .group-line{flex:1;height:1px;background:var(--border)}
-    .group-count{font-size:11px;color:var(--text-dim);white-space:nowrap}
-    .group-add-btn{font-family:var(--font-mono);font-size:11px;color:var(--accent);background:rgba(41,224,127,.07);border:1px solid var(--accent-dim);border-radius:4px;padding:4px 12px;cursor:pointer;transition:all .2s;white-space:nowrap}
-    .group-add-btn:hover{background:rgba(41,224,127,.15)}
+    .empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:56px 0;color:var(--text-dim);gap:12px}
+    .empty-icon{font-size:32px;opacity:.3}
+    .empty-title{font-family:var(--font-dis);font-size:15px;color:var(--text-mid)}
+    .loading{display:flex;align-items:center;gap:8px;color:var(--text-dim);font-size:12px;padding:40px 0}
+    .spin{width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
 
-    .doc-entry{background:var(--bg-card);border:1px solid var(--border);border-radius:6px;margin-bottom:12px;overflow:hidden;transition:border-color .2s}
-    .doc-entry:hover{border-color:var(--border-hi)}
-    .doc-entry.open{border-color:var(--border-hi)}
+    /* ── VERSION HISTORY ── */
+    .versions-list{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+    .ver-item{display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--bg-raised);border:1px solid var(--border);border-radius:4px;font-size:12px}
+    .ver-tag{color:var(--accent);font-weight:700;flex-shrink:0;min-width:40px}
+    .ver-msg{color:var(--text-mid);flex:1}
+    .ver-date{color:var(--text-dim);font-size:10px;flex-shrink:0}
+    .ver-del{background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:13px;padding:0 2px;transition:color .15s;flex-shrink:0}
+    .ver-del:hover{color:var(--red)}
 
-    .doc-main{display:grid;grid-template-columns:auto 1fr auto;gap:20px;align-items:center;padding:20px 24px;cursor:pointer}
-    .doc-icon{width:38px;height:38px;border-radius:5px;background:var(--bg-raised);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
-    .doc-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:4px}
-    .doc-title{font-family:var(--font-dis);font-size:15px;font-weight:700;color:var(--text);letter-spacing:-.2px}
-    .doc-version{font-size:10px;color:var(--text-mid);border:1px solid var(--border);border-radius:3px;padding:1px 7px;flex-shrink:0}
-    .doc-badge{font-size:10px;padding:1px 7px;border-radius:3px;border:1px solid;flex-shrink:0}
-    .badge-new{color:var(--accent);border-color:var(--accent-dim);background:rgba(41,224,127,.07)}
-    .badge-upd{color:var(--amber);border-color:#6b4a18;background:rgba(240,168,67,.07)}
-    .doc-meta-row{display:flex;gap:16px;flex-wrap:wrap;align-items:center}
-    .doc-chips{display:flex;gap:5px}
-    .chip{font-size:10px;color:var(--text-dim);border:1px solid var(--border);border-radius:3px;padding:1px 6px}
-    .doc-date{font-size:11px;color:var(--text-dim)}
-    .doc-actions{display:flex;align-items:center;gap:6px}
-    .doc-action-btn{width:28px;height:28px;border-radius:4px;background:transparent;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:12px;cursor:pointer;color:var(--text-dim);transition:all .2s}
-    .doc-action-btn:hover{border-color:var(--border-hi);color:var(--text)}
-    .doc-action-btn.edit:hover{color:var(--amber);border-color:#6b4a18}
-    .doc-action-btn.del:hover{color:var(--red);border-color:var(--red-dim)}
-    .btn-chevron{width:28px;height:28px;border-radius:4px;background:transparent;border:none;display:flex;align-items:center;justify-content:center;font-size:12px;cursor:pointer;color:var(--text-dim);transition:all .2s}
-    .doc-entry.open .btn-chevron{transform:rotate(180deg);color:var(--accent)}
+    /* ── DOC VIEW ── */
+    .doc-view-content{font-size:13px;color:var(--text-mid);line-height:1.9;white-space:pre-wrap}
+    .doc-view-meta{display:flex;gap:16px;flex-wrap:wrap;padding:12px 16px;background:var(--bg-raised);border-radius:4px;margin-bottom:16px;font-size:11px}
+    .doc-view-meta-item{display:flex;flex-direction:column;gap:2px}
+    .doc-view-meta-label{color:var(--text-dim);text-transform:uppercase;letter-spacing:.08em;font-size:10px}
+    .doc-view-meta-value{color:var(--text-mid)}
 
-    .doc-expanded{display:none;border-top:1px solid var(--border)}
-    .doc-entry.open .doc-expanded{display:block}
-    .doc-expanded-inner{display:grid;grid-template-columns:1fr 1fr;gap:0}
-    @media(max-width:700px){.doc-expanded-inner{grid-template-columns:1fr}}
-
-    .preview-pane{padding:24px;border-right:1px solid var(--border)}
-    .info-pane{padding:24px}
-    .pane-label{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-dim);margin-bottom:14px}
-
-    .preview-placeholder{background:var(--bg-raised);border:1px solid var(--border);border-radius:4px;aspect-ratio:4/3;display:flex;align-items:center;justify-content:center;color:var(--text-dim);font-size:12px;flex-direction:column;gap:8px}
-    .preview-placeholder .pi{font-size:28px;opacity:.3}
-
-    .notes-block{background:var(--bg-raised);border:1px solid var(--border);border-radius:4px;padding:16px;font-size:12px;color:var(--text-mid);line-height:1.8;margin-bottom:20px;white-space:pre-wrap}
-
-    .version-list{display:grid;gap:8px}
-    .version-item{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:start;padding:10px 12px;border-radius:4px;background:var(--bg-raised);border:1px solid var(--border)}
-    .version-tag{font-size:11px;color:var(--accent);font-weight:500;margin-top:1px;white-space:nowrap}
-    .version-msg{font-size:11px;color:var(--text-mid)}
-    .version-msg small{display:block;color:var(--text-dim);font-size:10px;margin-top:2px}
-    .version-del{font-size:11px;color:var(--text-dim);background:transparent;border:1px solid var(--border);border-radius:3px;padding:2px 8px;cursor:pointer;transition:all .2s;font-family:var(--font-mono)}
-    .version-del:hover{color:var(--red);border-color:var(--red-dim)}
-
-    .add-version-btn{font-family:var(--font-mono);font-size:11px;color:var(--text-dim);background:transparent;border:1px dashed var(--border);border-radius:4px;padding:7px 12px;cursor:pointer;transition:all .2s;width:100%;text-align:left;margin-top:8px}
-    .add-version-btn:hover{color:var(--accent);border-color:var(--accent-dim)}
-
-    .empty-state{text-align:center;padding:60px 24px;color:var(--text-dim);border:1px dashed var(--border);border-radius:6px}
-    .empty-icon{font-size:28px;margin-bottom:12px;opacity:.4}
-    .empty-text{font-size:12px}
-
-    .no-projects{text-align:center;padding:80px 24px;color:var(--text-dim)}
-    .no-projects-icon{font-size:32px;margin-bottom:16px;opacity:.3}
-    .no-projects-title{font-family:var(--font-dis);font-size:16px;color:var(--text-mid);margin-bottom:8px}
-    .no-projects-sub{font-size:12px;margin-bottom:24px}
-
-    /* MODAL */
-    .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(4px);z-index:200;display:none;align-items:center;justify-content:center;padding:24px}
+    /* ── MODAL ── */
+    .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(4px);z-index:200;display:none;align-items:center;justify-content:center;padding:16px}
     .modal-overlay.open{display:flex}
-    .modal{background:var(--bg-card);border:1px solid var(--border-hi);border-radius:8px;width:100%;max-width:600px;max-height:90vh;overflow-y:auto;animation:mIn .2s ease}
+    .modal{background:var(--bg-card);border:1px solid var(--border-hi);border-radius:8px;width:100%;max-width:720px;max-height:90vh;overflow-y:auto;animation:mIn .2s ease}
+    .modal.sm{max-width:480px}
     @keyframes mIn{from{opacity:0;transform:scale(.96) translateY(8px)}to{opacity:1;transform:none}}
-    .modal-header{padding:20px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
-    .modal-title{font-family:var(--font-dis);font-size:16px;font-weight:700;color:var(--text)}
-    .modal-close{width:28px;height:28px;border-radius:4px;background:transparent;border:none;color:var(--text-dim);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:all .15s}
+    .modal-header{padding:18px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+    .modal-title{font-family:var(--font-dis);font-size:15px;font-weight:700;color:var(--text)}
+    .modal-close{width:28px;height:28px;border-radius:4px;background:transparent;border:none;color:var(--text-dim);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0}
     .modal-close:hover{color:var(--text);background:var(--bg-raised)}
-    .modal-body{padding:24px}
-    .modal-footer{padding:16px 24px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px}
+    .modal-body{padding:20px}
+    .modal-footer{padding:14px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px}
 
-    .form-group{margin-bottom:18px}
-    .form-label{display:block;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim);margin-bottom:8px}
-    .form-input{width:100%;background:var(--bg-raised);border:1px solid var(--border);border-radius:4px;padding:10px 14px;font-family:var(--font-mono);font-size:13px;color:var(--text);transition:border-color .2s;outline:none}
+    /* ── FORMS ── */
+    .form-group{margin-bottom:16px}
+    .form-label{display:block;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim);margin-bottom:6px}
+    .form-input{width:100%;background:var(--bg-raised);border:1px solid var(--border);border-radius:4px;padding:9px 12px;font-family:var(--font-mono);font-size:13px;color:var(--text);outline:none;transition:border-color .2s}
     .form-input:focus{border-color:var(--accent-dim)}
-    .form-textarea{width:100%;background:var(--bg-raised);border:1px solid var(--border);border-radius:4px;padding:12px 14px;font-family:var(--font-mono);font-size:12px;color:var(--text);resize:vertical;min-height:120px;line-height:1.7;transition:border-color .2s;outline:none}
+    .form-select{width:100%;background:var(--bg-raised);border:1px solid var(--border);border-radius:4px;padding:9px 12px;font-family:var(--font-mono);font-size:13px;color:var(--text);outline:none;cursor:pointer}
+    .form-textarea{width:100%;background:var(--bg-raised);border:1px solid var(--border);border-radius:4px;padding:11px 12px;font-family:var(--font-mono);font-size:12px;color:var(--text);resize:vertical;min-height:200px;line-height:1.75;outline:none;transition:border-color .2s}
     .form-textarea:focus{border-color:var(--accent-dim)}
-    .form-select{width:100%;background:var(--bg-raised);border:1px solid var(--border);border-radius:4px;padding:10px 14px;font-family:var(--font-mono);font-size:13px;color:var(--text);outline:none;cursor:pointer}
-    .form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-    .form-hint{font-size:11px;color:var(--text-dim);margin-top:6px}
+    .form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    .form-row3{display:grid;grid-template-columns:2fr 1fr 1fr;gap:14px}
+    .icon-grid{display:grid;grid-template-columns:repeat(10,1fr);gap:5px}
+    .icon-opt{width:32px;height:32px;border-radius:4px;background:var(--bg-raised);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:15px;cursor:pointer;transition:all .15s}
+    .icon-opt:hover,.icon-opt.sel{border-color:var(--accent-dim);background:rgba(41,224,127,.08)}
 
+    /* ── BUTTONS ── */
     .btn{font-family:var(--font-mono);font-size:11px;padding:7px 14px;border-radius:4px;cursor:pointer;border:1px solid;transition:all .2s;letter-spacing:.05em}
     .btn-primary{color:var(--accent);border-color:var(--accent-dim);background:rgba(41,224,127,.07)}
     .btn-primary:hover{background:rgba(41,224,127,.15)}
@@ -153,41 +152,86 @@
     .btn-ghost:hover{color:var(--text);border-color:var(--border-hi)}
     .btn-danger{color:var(--red);border-color:var(--red-dim);background:transparent}
     .btn-danger:hover{background:rgba(224,90,90,.08)}
+    .btn-sm{padding:4px 10px;font-size:10px}
 
-    .confirm-overlay{position:fixed;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(4px);z-index:300;display:none;align-items:center;justify-content:center}
+    /* ── CONFIRM ── */
+    .confirm-overlay{position:fixed;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(4px);z-index:300;display:none;align-items:center;justify-content:center;padding:16px}
     .confirm-overlay.open{display:flex}
-    .confirm-box{background:var(--bg-card);border:1px solid var(--red-dim);border-radius:8px;padding:28px;max-width:380px;width:90%;text-align:center}
+    .confirm-box{background:var(--bg-card);border:1px solid var(--red-dim);border-radius:8px;padding:28px;max-width:380px;width:100%;text-align:center}
     .confirm-icon{font-size:28px;margin-bottom:14px}
     .confirm-title{font-family:var(--font-dis);font-size:16px;color:var(--text);margin-bottom:8px}
     .confirm-sub{font-size:12px;color:var(--text-mid);margin-bottom:24px}
     .confirm-btns{display:flex;gap:8px;justify-content:center}
 
-    /* icon picker */
-    .icon-grid{display:grid;grid-template-columns:repeat(10,1fr);gap:5px}
-    .icon-opt{width:32px;height:32px;border-radius:4px;background:var(--bg-raised);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:15px;cursor:pointer;transition:all .15s}
-    .icon-opt:hover,.icon-opt.sel{border-color:var(--accent-dim);background:rgba(41,224,127,.08)}
-
-    footer{border-top:1px solid var(--border);padding:32px 24px;margin-top:60px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;font-size:11px;color:var(--text-dim);max-width:1100px;margin-left:auto;margin-right:auto;position:relative;z-index:1}
+    /* ── FOOTER ── */
+    footer{border-top:1px solid var(--border);padding:22px 24px;display:flex;justify-content:space-between;font-size:11px;color:var(--text-dim);position:relative;z-index:1}
     .footer-sig{color:var(--accent)}
-    ::-webkit-scrollbar{width:4px}
-    ::-webkit-scrollbar-track{background:transparent}
-    ::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+    ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+
+    /* ══════════════════════════════════
+       MOBILE — ≤768px
+    ══════════════════════════════════ */
+    @media(max-width:768px){
+      .nav-links,.auth-user{display:none}
+      .nav-ham{display:flex}
+      .nav-logo span{display:none}
+
+      .site-wrap{padding:0 14px}
+      .page-header{padding:28px 0 20px;margin-bottom:20px}
+      .page-title{font-size:22px}
+
+      /* Filter bar: horizontal scroll on mobile */
+      .filter-bar{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+      .filter-bar::-webkit-scrollbar{display:none}
+
+      .docs-grid{grid-template-columns:1fr}
+      .form-row{grid-template-columns:1fr}
+      .form-row3{grid-template-columns:1fr 1fr}
+      .icon-grid{grid-template-columns:repeat(8,1fr)}
+
+      .modal{max-height:95vh;border-radius:10px 10px 0 0;margin-top:auto}
+      .modal-overlay{align-items:flex-end;padding:0}
+      .form-textarea{min-height:160px}
+
+      .doc-view-meta{gap:12px}
+      footer{padding:16px 14px}
+    }
+
+    @media(max-width:480px){
+      .form-row3{grid-template-columns:1fr}
+      .icon-grid{grid-template-columns:repeat(6,1fr)}
+    }
   </style>
 </head>
 <body>
 
-<nav>
+<nav id="main-nav">
   <div class="nav-inner">
     <a href="index.html" class="nav-logo">lab.notes <span>/ EE Engineering</span></a>
+    <div class="nav-spacer"></div>
     <ul class="nav-links">
       <li><a href="index.html#projekte">Projekte</a></li>
       <li><a href="docs.html" class="active">Docs</a></li>
       <li><a href="kb.html">Knowledge Base</a></li>
     </ul>
-    <div class="nav-status"><div class="status-dot"></div>aktiv</div>
-    <div style="display:flex;align-items:center;gap:8px;">
+    <div class="nav-auth">
+      <div class="status-dot"></div>
       <span class="auth-user" id="auth-user-display"></span>
       <button class="auth-btn" id="auth-btn" onclick="authAction()">Login</button>
+    </div>
+    <button class="nav-ham" id="nav-ham" onclick="toggleMobileNav()" aria-label="Menü">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+  <div class="nav-mobile" id="nav-mobile">
+    <ul class="nav-links">
+      <li><a href="index.html#projekte" onclick="closeMobileNav()">Projekte</a></li>
+      <li><a href="docs.html" class="active">Docs</a></li>
+      <li><a href="kb.html">Knowledge Base</a></li>
+    </ul>
+    <div class="nav-mobile-auth">
+      <span id="auth-user-display-m" style="font-size:11px;color:var(--text-mid)"></span>
+      <button class="auth-btn" onclick="authAction()">Login</button>
     </div>
   </div>
 </nav>
@@ -195,19 +239,12 @@
 <div class="site-wrap">
   <div class="page-header">
     <div>
-      <div class="breadcrumb"><a href="index.html">lab.notes</a><span>/</span><span>Docs</span></div>
-      <h1 class="page-title">Schaltpläne & Docs</h1>
-      <p class="page-sub">Projektdokumentation · Schaltpläne · BOMs · Simulationsergebnisse</p>
+      <div class="page-title">Projekt<span class="hl">docs</span></div>
+      <div class="page-meta" id="page-meta"><span>Lade...</span></div>
     </div>
-    <div id="header-stats" style="font-size:11px;color:var(--text-dim);"></div>
   </div>
-
-  <div class="filter-bar" id="filter-bar">
-    <span class="filter-label">Projekt:</span>
-    <button class="filter-btn active" onclick="filterDocs('all',this)">Alle</button>
-  </div>
-
-  <div id="docs-content"></div>
+  <div class="filter-bar" id="filter-bar"></div>
+  <div id="docs-content"><div class="loading"><div class="spin"></div> Lade Docs...</div></div>
 </div>
 
 <footer>
@@ -227,72 +264,61 @@
         <label class="form-label">Icon</label>
         <div class="icon-grid" id="doc-icon-grid"></div>
       </div>
-      <div class="form-row">
+      <div class="form-row3">
         <div class="form-group">
           <label class="form-label">Titel</label>
-          <input class="form-input" id="doc-title" placeholder="z.B. Topologie-Analyse"/>
+          <input class="form-input" id="doc-title-input" placeholder="z.B. Gate-Driver Analyse"/>
         </div>
         <div class="form-group">
           <label class="form-label">Version</label>
-          <input class="form-input" id="doc-version" placeholder="z.B. v1.0"/>
+          <input class="form-input" id="doc-version-input" placeholder="v1.0"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Datum</label>
+          <input class="form-input" id="doc-date-input" placeholder="Mär 2026"/>
         </div>
       </div>
       <div class="form-row">
         <div class="form-group">
-          <label class="form-label">Datum</label>
-          <input class="form-input" id="doc-date" placeholder="z.B. 08 Mär 2026"/>
+          <label class="form-label">Tags (kommagetrennt)</label>
+          <input class="form-input" id="doc-tags-input" placeholder="z.B. Schaltung, Gate"/>
         </div>
         <div class="form-group">
-          <label class="form-label">Status</label>
-          <select class="form-select" id="doc-badge">
-            <option value="new">NEU</option>
-            <option value="upd">UPDATE</option>
-            <option value="">Kein Badge</option>
+          <label class="form-label">Badge</label>
+          <select class="form-select" id="doc-badge-input">
+            <option value="">— keiner —</option>
+            <option value="neu">NEU</option>
+            <option value="update">UPDATE</option>
           </select>
         </div>
       </div>
       <div class="form-group">
-        <label class="form-label">Tags (kommagetrennt)</label>
-        <input class="form-input" id="doc-tags" placeholder="z.B. Schaltplan, Gate-Driver"/>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Notizen</label>
-        <textarea class="form-textarea" id="doc-notes" placeholder="Beschreibung, offene Punkte, Änderungen..."></textarea>
+        <label class="form-label">Inhalt (Markdown)</label>
+        <textarea class="form-textarea" id="doc-content-input" placeholder="Dokumentation, Analyse, Notizen..."></textarea>
       </div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('modal-doc')">Abbrechen</button>
-      <button class="btn btn-primary" onclick="saveDoc()">Speichern</button>
+      <button class="btn btn-primary" id="doc-save-btn" onclick="saveDoc()">Speichern</button>
     </div>
   </div>
 </div>
 
-<!-- VERSION MODAL -->
-<div class="modal-overlay" id="modal-version">
-  <div class="modal" style="max-width:440px">
+<!-- DOC VIEW -->
+<div class="modal-overlay" id="modal-view">
+  <div class="modal">
     <div class="modal-header">
-      <span class="modal-title">Version hinzufügen</span>
-      <button class="modal-close" onclick="closeModal('modal-version')">✕</button>
+      <span class="modal-title" id="view-title"></span>
+      <button class="modal-close" onclick="closeModal('modal-view')">✕</button>
     </div>
     <div class="modal-body">
-      <div class="form-row">
-        <div class="form-group">
-          <label class="form-label">Version</label>
-          <input class="form-input" id="ver-tag" placeholder="z.B. v1.1"/>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Datum</label>
-          <input class="form-input" id="ver-date" placeholder="z.B. 10 Mär 2026"/>
-        </div>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Beschreibung</label>
-        <input class="form-input" id="ver-msg" placeholder="z.B. Bootstrap-C erhöht"/>
-      </div>
+      <div class="doc-view-meta" id="view-meta"></div>
+      <div class="doc-view-content" id="view-content"></div>
+      <div id="view-versions"></div>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal('modal-version')">Abbrechen</button>
-      <button class="btn btn-primary" onclick="saveVersion()">Hinzufügen</button>
+      <button class="btn btn-ghost" onclick="closeModal('modal-view')">Schließen</button>
+      <button class="btn btn-primary" id="view-edit-btn" onclick="editFromView()" style="display:none">✎ Bearbeiten</button>
     </div>
   </div>
 </div>
@@ -311,337 +337,293 @@
 </div>
 
 <script>
-const DOC_ICONS = ['📐','⚡','🔌','📊','🛠️','📝','🔬','📦','🗂️','💾','🖥️','📡','🔧','⚙️','🧪','💡','📋','🗃️','📌','🔍'];
+const DOCS_BASE='content/Docs';
+const DOC_ICONS=['📐','📊','📋','🔬','⚡','🔌','🛠️','🖥️','📦','🔧','💾','🧪','📡','⚙️','🗂️','📝','💡','🔋','🎛️','🤖'];
 
 // ── LAB API ──
-const LabAPI = (() => {
-  let _user = null, _isOwner = false, _perms = {};
-  async function init(onAuthChange) {
-    if (typeof netlifyIdentity === 'undefined') { onAuthChange(null); return; }
-    netlifyIdentity.on('login', async u => { netlifyIdentity.close(); _user = u; await _fetchMe(); onAuthChange(_user); });
-    netlifyIdentity.on('logout', () => { _user = null; _isOwner = false; _perms = {}; onAuthChange(null); });
-    netlifyIdentity.on('init', async u => { _user = u; if (u) await _fetchMe(); onAuthChange(_user); });
+const LabAPI=(()=>{
+  let _user=null,_isOwner=false;
+  async function init(cb){
+    if(typeof netlifyIdentity==='undefined'){cb(null);return;}
+    netlifyIdentity.on('login',async u=>{netlifyIdentity.close();_user=u;await _me();cb(_user);});
+    netlifyIdentity.on('logout',()=>{_user=null;_isOwner=false;cb(null);});
+    netlifyIdentity.on('init',async u=>{_user=u;if(u)await _me();cb(_user);});
     netlifyIdentity.init();
   }
-  async function _fetchMe() {
-    try { const r = await _apiFetch('/api?action=me'); if (r.ok) { const d = await r.json(); _isOwner = d.isOwner; _perms = d.permissions||{}; } } catch(e) {}
+  async function _me(){try{const r=await _r('/api?action=me');if(r.ok){const d=await r.json();_isOwner=d.isOwner;}}catch(e){}}
+  function _r(url,opts={}){const t=_user?.token?.access_token;return fetch(url,{...opts,headers:{'Content-Type':'application/json',...(t?{'Authorization':`Bearer ${t}`}:{}),...(opts.headers||{})}});}
+  async function list(p){const r=await _r(`/api?action=list&path=${encodeURIComponent(p)}`);return r.ok?(await r.json()).items:[];}
+  async function listfiles(p){const r=await _r(`/api?action=listfiles&path=${encodeURIComponent(p)}`);return r.ok?(await r.json()).items:[];}
+  async function readfile(p){const r=await _r(`/api?action=readfile&path=${encodeURIComponent(p)}`);return r.ok?await r.json():{content:null,sha:null};}
+  async function writefile(p,content,sha){if(!_user){netlifyIdentity.open('login');return false;}const r=await _r('/api',{method:'POST',body:JSON.stringify({action:'writefile',path:p,content,sha})});return r.ok?await r.json():false;}
+  async function deletefile(p,sha){if(!_user){netlifyIdentity.open('login');return false;}const r=await _r('/api',{method:'POST',body:JSON.stringify({action:'deletefile',path:p,sha})});return r.ok;}
+  async function createfolder(p){if(!_user){netlifyIdentity.open('login');return false;}const r=await _r('/api',{method:'POST',body:JSON.stringify({action:'createfolder',path:p})});return r.ok;}
+  async function deletefolder(p){if(!_user){netlifyIdentity.open('login');return false;}const r=await _r('/api',{method:'POST',body:JSON.stringify({action:'deletefolder',path:p})});return r.ok;}
+  async function readProjects(){
+    try{const r=await _r('/api?key=projects');if(r.ok){const{data}=await r.json();if(data)return data;}}catch(e){}
+    const c=localStorage.getItem('cache-projects')||localStorage.getItem('lab-projects');
+    return c?JSON.parse(c):[];
   }
-  function _apiFetch(url, opts={}) {
-    const token = _user?.token?.access_token;
-    return fetch(url, { ...opts, headers: { 'Content-Type':'application/json', ...(token?{'Authorization':`Bearer ${token}`}:{}), ...(opts.headers||{}) }});
-  }
-  async function read(key, def=null) {
-    try {
-      const r = await _apiFetch(`/api?key=${key}`);
-      if (r.ok) { const {data} = await r.json(); if (data !== null) { localStorage.setItem('cache-'+key, JSON.stringify(data)); return data; } }
-    } catch(e) {}
-    const cached = localStorage.getItem('cache-'+key);
-    if (cached) return JSON.parse(cached);
-    const legacyMap = {'projects':'lab-projects','kb':'kb-data','docs':'docs-data'};
-    const legacy = legacyMap[key] ? localStorage.getItem(legacyMap[key]) : null;
-    if (legacy) return JSON.parse(legacy);
-    return def;
-  }
-  async function write(key, d, projectId) {
-    if (!_user) { netlifyIdentity.open('login'); return false; }
-    localStorage.setItem('cache-'+key, JSON.stringify(d));
-    try {
-      const r = await _apiFetch('/api', { method:'POST', body: JSON.stringify({key, data:d, projectId}) });
-      return r.ok;
-    } catch(e) { return false; }
-  }
-  function canEdit(projectId) {
-    if (!_user) return false; if (_isOwner) return true;
-    const p = _perms[projectId]||_perms['*']; return p==='rw';
-  }
-  function isOwner() { return _isOwner; }
-  function getUser() { return _user; }
-  function login() { netlifyIdentity.open('login'); }
-  function logout() { netlifyIdentity.logout(); }
-  return { init, read, write, canEdit, isOwner, getUser, login, logout };
+  function isOwner(){return _isOwner;}
+  function getUser(){return _user;}
+  function login(){netlifyIdentity.open('login');}
+  function logout(){netlifyIdentity.logout();}
+  return{init,list,listfiles,readfile,writefile,deletefile,createfolder,deletefolder,readProjects,isOwner,getUser,login,logout};
 })();
 
-function authAction() { if (LabAPI.getUser()) LabAPI.logout(); else LabAPI.login(); }
-
-function updateAuthUI(user) {
-  const btn = document.getElementById('auth-btn');
-  const disp = document.getElementById('auth-user-display');
-  if (user) { btn.textContent='Logout'; btn.className='auth-btn logged-in'; disp.textContent=user.email; }
-  else { btn.textContent='Login'; btn.className='auth-btn'; disp.textContent=''; }
-  render();
+// ── FRONTMATTER ──
+function parseFM(raw){
+  if(!raw||!raw.startsWith('---'))return{meta:{},content:raw||''};
+  const end=raw.indexOf('\n---',3);if(end===-1)return{meta:{},content:raw};
+  const yaml=raw.slice(4,end);const body=raw.slice(end+4).trimStart();
+  const meta={};
+  yaml.split('\n').forEach(line=>{
+    const c=line.indexOf(':');if(c===-1)return;
+    const k=line.slice(0,c).trim();const v=line.slice(c+1).trim();
+    if(v.startsWith('[')&&v.endsWith(']'))meta[k]=v.slice(1,-1).split(',').map(s=>s.trim()).filter(Boolean);
+    else meta[k]=v;
+  });
+  const verMatch=body.match(/<!-- versions: (.*?) -->/s);
+  let versions=[];if(verMatch){try{versions=JSON.parse(verMatch[1]);}catch(e){}}
+  const content=body.replace(/\n?<!-- versions: .*? -->/s,'').trim();
+  return{meta,content,versions};
 }
+function serializeDoc(meta,content,versions){
+  const lines=['---'];
+  for(const[k,v]of Object.entries(meta)){
+    if(Array.isArray(v))lines.push(`${k}: [${v.join(', ')}]`);else lines.push(`${k}: ${v}`);
+  }
+  lines.push('---','',content||'');
+  if(versions?.length)lines.push('','<!-- versions: '+JSON.stringify(versions)+' -->');
+  return lines.join('\n');
+}
+function titleToFile(t){return t.trim().replace(/[^\w\säöüÄÖÜß\-]/g,'').replace(/\s+/g,'-')+'.md';}
 
-async function loadProjects() { return await LabAPI.read('projects', []); }
-async function loadDocs()     { return await LabAPI.read('docs', { entries: [] }); }
-async function saveDocs(d)    { await LabAPI.write('docs', d); }
+// ── STATE ──
+let projects=[],allDocs=[],activeFilter='all',
+    selectedIcon='📐',editingDoc=null,viewingDoc=null,pendingConfirm=null;
 
-let activeFilter = 'all';
-let editingDocId = null;
-let editingProjectId = null;
-let selIcon = '📐';
-let pendingConfirm = null;
-let versionDocId = null;
+// ── MOBILE NAV ──
+function toggleMobileNav(){
+  document.getElementById('nav-ham').classList.toggle('open');
+  document.getElementById('nav-mobile').classList.toggle('open');
+}
+function closeMobileNav(){
+  document.getElementById('nav-ham').classList.remove('open');
+  document.getElementById('nav-mobile').classList.remove('open');
+}
+document.addEventListener('click',e=>{
+  const nav=document.getElementById('main-nav');
+  if(!nav.contains(e.target))closeMobileNav();
+});
+
+// ── AUTH ──
+function updateAuthUI(user){
+  const btn=document.getElementById('auth-btn');const disp=document.getElementById('auth-user-display');
+  const dispM=document.getElementById('auth-user-display-m');
+  if(user){btn.textContent='Logout';btn.className='auth-btn logged-in';disp.textContent=user.email;if(dispM)dispM.textContent=user.email;}
+  else{btn.textContent='Login';btn.className='auth-btn';disp.textContent='';if(dispM)dispM.textContent='';}
+  const veb=document.getElementById('view-edit-btn');if(veb)veb.style.display=LabAPI.isOwner()?'':'none';
+  renderPage();
+}
+function authAction(){if(LabAPI.getUser())LabAPI.logout();else LabAPI.login();}
+
+// ── INIT — fully parallel ──
+async function initDocs(){
+  // Fetch projects and folder list in parallel
+  const[p,folders]=await Promise.all([
+    LabAPI.readProjects(),
+    LabAPI.list('Docs')
+  ]);
+  projects=p;
+  allDocs=[];
+  // Load all project folders in parallel, and within each folder, all files in parallel
+  await Promise.all(folders.map(async f=>{
+    const files=await LabAPI.listfiles(`Docs/${f.name}`);
+    await Promise.all(files.filter(x=>x.name!=='.gitkeep').map(async file=>{
+      const raw=await LabAPI.readfile(file.path);
+      const{meta,content,versions}=parseFM(raw.content||'');
+      allDocs.push({
+        projectId:f.name,filename:file.name,path:file.path,sha:raw.sha,
+        icon:meta.icon||'📐',title:meta.title||file.name.replace(/\.md$/,''),
+        version:meta.version||'',date:meta.date||'',
+        tags:Array.isArray(meta.tags)?meta.tags:(meta.tags?[meta.tags]:[]),
+        badge:meta.badge||'',content,versions:versions||[]
+      });
+    }));
+  }));
+  renderPage();
+}
 
 // ── RENDER ──
-async function render() {
-  const projects = await loadProjects();
-  const docs = await loadDocs();
-  renderFilterBar(projects);
-  renderContent(projects, docs);
-  renderStats(docs);
+function renderPage(){
+  const total=allDocs.length;
+  document.getElementById('page-meta').innerHTML=
+    `<span><b>${total}</b> Dokumente</span><span><b>${projects.length}</b> Projekte</span>`;
+  renderFilterBar();
+  renderDocs();
 }
 
-function renderStats(docs) {
-  const total = (docs.entries||[]).length;
-  document.getElementById('header-stats').textContent = `${total} Dokument${total!==1?'e':''}`;
+function renderFilterBar(){
+  document.getElementById('filter-bar').innerHTML=
+    `<button class="filter-pill${activeFilter==='all'?' active':''}" onclick="setFilter('all')">Alle</button>`+
+    projects.map(p=>`<button class="filter-pill${activeFilter===p.id?' active':''}" onclick="setFilter('${p.id}')">${p.icon} ${esc(p.name)}</button>`).join('');
 }
 
-function renderFilterBar(projects) {
-  const bar = document.getElementById('filter-bar');
-  let html = `<span class="filter-label">Projekt:</span>
-    <button class="filter-btn ${activeFilter==='all'?'active':''}" onclick="filterDocs('all',this)">Alle</button>`;
-  projects.forEach(p => {
-    html += `<button class="filter-btn ${activeFilter===p.id?'active':''}" onclick="filterDocs('${p.id}',this)">${p.icon} ${esc(p.name)}</button>`;
-  });
-  bar.innerHTML = html;
-}
+function setFilter(id){activeFilter=id;renderFilterBar();renderDocs();}
 
-function renderContent(projects, docs) {
-  const content = document.getElementById('docs-content');
-
-  if (!projects.length) {
-    content.innerHTML = `<div class="no-projects">
-      <div class="no-projects-icon">📂</div>
-      <div class="no-projects-title">Noch keine Projekte</div>
-      <div class="no-projects-sub">Erstelle zuerst ein Projekt auf der Homepage.</div>
-      <a href="index.html" style="font-family:var(--font-mono);font-size:11px;color:var(--accent);border:1px solid var(--accent-dim);background:rgba(41,224,127,.07);border-radius:4px;padding:7px 14px;text-decoration:none;">→ Zur Homepage</a>
-    </div>`;
+function renderDocs(){
+  const container=document.getElementById('docs-content');
+  const canEdit=LabAPI.isOwner();
+  const filteredProjects=activeFilter==='all'?projects:projects.filter(p=>p.id===activeFilter);
+  if(!filteredProjects.length){
+    container.innerHTML='<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-title">Keine Projekte vorhanden</div></div>';
     return;
   }
-
-  const visibleProjects = activeFilter === 'all' ? projects : projects.filter(p => p.id === activeFilter);
-  let html = '';
-
-  visibleProjects.forEach(p => {
-    const entries = (docs.entries||[]).filter(e => e.projectId === p.id);
-    html += `
-      <div class="project-group" data-project="${p.id}">
-        <div class="group-header">
-          <span class="group-tag ${p.status}">${statusLabel(p.status)}</span>
-          <span class="group-title">${p.icon} ${esc(p.name)}</span>
-          <div class="group-line"></div>
-          <span class="group-count">${entries.length} Dokument${entries.length!==1?'e':''}</span>
-          <button class="group-add-btn" onclick="openAddDoc('${p.id}')">+ Dokument</button>
-        </div>
-        ${entries.length === 0
-          ? `<div class="empty-state"><div class="empty-icon">📄</div><div class="empty-text">Noch keine Dokumente für dieses Projekt</div></div>`
-          : entries.map(e => renderDocEntry(e)).join('')
-        }
-      </div>`;
-  });
-
-  content.innerHTML = html;
-}
-
-function statusLabel(s) { return s==='wip'?'⚡ In Arbeit':s==='done'?'✓ Fertig':'○ Geplant'; }
-
-function renderDocEntry(e) {
-  const tags = (e.tags||[]).map(t=>`<span class="chip">${esc(t)}</span>`).join('');
-  const badge = e.badge==='new'
-    ? `<span class="doc-badge badge-new">NEU</span>`
-    : e.badge==='upd'
-    ? `<span class="doc-badge badge-upd">UPDATE</span>` : '';
-  const versions = (e.versions||[]);
-
-  return `
-    <div class="doc-entry" id="doc-${e.id}">
-      <div class="doc-main" onclick="toggleDoc('doc-${e.id}')">
-        <div class="doc-icon">${e.icon||'📄'}</div>
-        <div class="doc-info">
-          <div class="doc-top">
-            <span class="doc-title">${esc(e.title)}</span>
-            <span class="doc-version">${esc(e.version||'')}</span>
-            ${badge}
-          </div>
-          <div class="doc-meta-row">
-            <div class="doc-chips">${tags}</div>
-            <span class="doc-date">${esc(e.date||'')}</span>
-          </div>
-        </div>
-        <div class="doc-actions" onclick="event.stopPropagation()">
-          <button class="doc-action-btn edit" title="Bearbeiten" onclick="openEditDoc('${e.id}')">✎</button>
-          <button class="doc-action-btn del" title="Löschen" onclick="confirmDelDoc('${e.id}')">✕</button>
-          <button class="btn-chevron">▾</button>
-        </div>
+  container.innerHTML=filteredProjects.map(p=>{
+    const docs=allDocs.filter(d=>d.projectId===p.id);
+    return`<div class="project-section">
+      <div class="project-section-header">
+        <div class="project-section-title">${p.icon} ${esc(p.name)}</div>
+        ${canEdit?`<button class="btn btn-primary btn-sm" onclick="openAddDoc('${p.id}')">+ Dokument</button>`:''}
       </div>
-      <div class="doc-expanded">
-        <div class="doc-expanded-inner">
-          <div class="preview-pane">
-            <div class="pane-label">Vorschau</div>
-            <div class="preview-placeholder">
-              <span class="pi">${e.icon||'📄'}</span>
-              <span>Bild hier einfügen</span>
-            </div>
-            <p style="font-size:11px;color:var(--text-dim);margin-top:10px;text-align:center;">${esc(e.title)}</p>
-          </div>
-          <div class="info-pane">
-            <div class="pane-label">Notizen</div>
-            <div class="notes-block">${esc(e.notes||'Noch keine Notizen.')}</div>
-            <div class="pane-label">Versionshistorie</div>
-            <div class="version-list" id="vlist-${e.id}">
-              ${versions.length === 0
-                ? `<div style="font-size:11px;color:var(--text-dim);">Noch keine Versionen eingetragen.</div>`
-                : versions.map((v,i) => `
-                  <div class="version-item">
-                    <span class="version-tag">${esc(v.tag)}</span>
-                    <div class="version-msg">${esc(v.msg)}<small>${esc(v.date||'')}</small></div>
-                    <button class="version-del" onclick="delVersion('${e.id}',${i})">✕</button>
-                  </div>`).join('')
-              }
-            </div>
-            <button class="add-version-btn" onclick="openAddVersion('${e.id}')">+ Version hinzufügen</button>
-          </div>
-        </div>
-      </div>
+      ${docs.length===0
+        ?`<div style="color:var(--text-dim);font-size:12px;padding:12px 0">Noch keine Docs${canEdit?' — klick &quot;+ Dokument&quot;':''}</div>`
+        :`<div class="docs-grid">${docs.map(d=>docCard(d,canEdit)).join('')}</div>`}
     </div>`;
+  }).join('');
 }
 
-// ── FILTER ──
-function filterDocs(projectId, btn) {
-  activeFilter = projectId;
-  render();
-}
-
-// ── TOGGLE ──
-function toggleDoc(id) {
-  document.getElementById(id).classList.toggle('open');
+function docCard(d,canEdit){
+  const tags=(d.tags||[]).map(t=>`<span class="doc-tag">${esc(t)}</span>`).join('');
+  const badge=d.badge?`<span class="doc-badge ${d.badge}">${d.badge.toUpperCase()}</span>`:'';
+  const preview=d.content.replace(/[#*`>]/g,'').slice(0,100);
+  return`<div class="doc-card" onclick="viewDoc('${d.path}')">
+    ${canEdit?`<div class="doc-card-actions">
+      <button class="doc-action-btn edit" onclick="event.stopPropagation();editDoc('${d.path}')">✎</button>
+      <button class="doc-action-btn del" onclick="event.stopPropagation();confirmDelDoc('${d.path}')">✕</button>
+    </div>`:''}
+    <div class="doc-card-top">
+      <span class="doc-icon">${d.icon}</span>
+      <span class="doc-title">${esc(d.title)}</span>
+      ${d.version?`<span class="doc-version">${esc(d.version)}</span>`:''}
+    </div>
+    ${badge?`<div style="margin-bottom:6px">${badge}</div>`:''}
+    <div class="doc-preview">${esc(preview)}${d.content.length>100?'…':''}</div>
+    <div class="doc-footer"><div class="doc-tags">${tags}</div><span class="doc-date">${d.date||''}</span></div>
+  </div>`;
 }
 
 // ── DOC CRUD ──
-function openAddDoc(projectId) {
-  editingDocId = null;
-  editingProjectId = projectId;
-  selIcon = '📐';
-  document.getElementById('modal-doc-title').textContent = 'Neues Dokument';
-  ['doc-title','doc-version','doc-date','doc-tags','doc-notes'].forEach(id => document.getElementById(id).value='');
-  document.getElementById('doc-badge').value = 'new';
-  renderDocIconGrid();
-  openModal('modal-doc');
-  setTimeout(()=>document.getElementById('doc-title').focus(),100);
+function openAddDoc(projectId){
+  editingDoc=null;selectedIcon='📐';
+  document.getElementById('modal-doc-title').textContent='Neues Dokument';
+  document.getElementById('doc-title-input').value='';
+  document.getElementById('doc-version-input').value='v1.0';
+  document.getElementById('doc-date-input').value=new Date().toLocaleDateString('de-DE',{month:'short',year:'numeric'});
+  document.getElementById('doc-tags-input').value='';
+  document.getElementById('doc-badge-input').value='neu';
+  document.getElementById('doc-content-input').value='';
+  document.getElementById('doc-save-btn').dataset.project=projectId;
+  renderDocIconGrid();openModal('modal-doc');
+  setTimeout(()=>document.getElementById('doc-title-input').focus(),100);
 }
 
-async function openEditDoc(id) {
-  editingDocId = id;
-  const docs = await loadDocs();
-  const e = (docs.entries||[]).find(x=>x.id===id);
-  if(!e) return;
-  editingProjectId = e.projectId;
-  selIcon = e.icon || '📐';
-  document.getElementById('modal-doc-title').textContent = 'Dokument bearbeiten';
-  document.getElementById('doc-title').value = e.title||'';
-  document.getElementById('doc-version').value = e.version||'';
-  document.getElementById('doc-date').value = e.date||'';
-  document.getElementById('doc-tags').value = (e.tags||[]).join(', ');
-  document.getElementById('doc-notes').value = e.notes||'';
-  document.getElementById('doc-badge').value = e.badge||'';
-  renderDocIconGrid();
-  openModal('modal-doc');
+function editDoc(path){
+  const d=allDocs.find(x=>x.path===path);if(!d)return;
+  editingDoc=d;selectedIcon=d.icon||'📐';
+  document.getElementById('modal-doc-title').textContent='Dokument bearbeiten';
+  document.getElementById('doc-title-input').value=d.title;
+  document.getElementById('doc-version-input').value=d.version||'';
+  document.getElementById('doc-date-input').value=d.date||'';
+  document.getElementById('doc-tags-input').value=(d.tags||[]).join(', ');
+  document.getElementById('doc-badge-input').value=d.badge||'';
+  document.getElementById('doc-content-input').value=d.content;
+  renderDocIconGrid();closeModal('modal-view');openModal('modal-doc');
+  setTimeout(()=>document.getElementById('doc-title-input').focus(),100);
 }
 
-function renderDocIconGrid() {
-  document.getElementById('doc-icon-grid').innerHTML = DOC_ICONS.map(i=>
-    `<div class="icon-opt${i===selIcon?' sel':''}" onclick="pickDocIcon('${i}')">${i}</div>`
-  ).join('');
+async function saveDoc(){
+  const title=document.getElementById('doc-title-input').value.trim();
+  if(!title){document.getElementById('doc-title-input').focus();return;}
+  const tags=document.getElementById('doc-tags-input').value.split(',').map(t=>t.trim()).filter(Boolean);
+  const content=document.getElementById('doc-content-input').value;
+  const version=document.getElementById('doc-version-input').value.trim();
+  const date=document.getElementById('doc-date-input').value.trim();
+  const badge=document.getElementById('doc-badge-input').value;
+  const projectId=editingDoc?editingDoc.projectId:document.getElementById('doc-save-btn').dataset.project;
+  const filename=editingDoc?editingDoc.filename:titleToFile(title);
+  const filePath=`${DOCS_BASE}/${projectId}/${filename}`;
+  if(!editingDoc){const existing=allDocs.find(d=>d.projectId===projectId);if(!existing)await LabAPI.createfolder(`${DOCS_BASE}/${projectId}`);}
+  let versions=editingDoc?[...(editingDoc.versions||[])]:[];
+  if(editingDoc&&version&&version!==editingDoc.version)versions.unshift({tag:version,msg:'Update',date:new Date().toISOString().split('T')[0]});
+  const meta={icon:selectedIcon,title,version,date,tags,badge};
+  const md=serializeDoc(meta,content,versions);
+  const btn=document.getElementById('doc-save-btn');btn.textContent='Speichert...';btn.disabled=true;
+  const res=await LabAPI.writefile(filePath,md,editingDoc?.sha||null);
+  btn.textContent='Speichern';btn.disabled=false;
+  if(!res){alert('Fehler beim Speichern');return;}
+  closeModal('modal-doc');await initDocs();
 }
 
-function pickDocIcon(i) { selIcon=i; renderDocIconGrid(); }
+function viewDoc(path){
+  const d=allDocs.find(x=>x.path===path);if(!d)return;
+  viewingDoc=d;
+  document.getElementById('view-title').textContent=`${d.icon} ${d.title}`;
+  document.getElementById('view-meta').innerHTML=
+    (d.version?`<div class="doc-view-meta-item"><span class="doc-view-meta-label">Version</span><span class="doc-view-meta-value" style="color:var(--accent)">${esc(d.version)}</span></div>`:'')+
+    (d.date?`<div class="doc-view-meta-item"><span class="doc-view-meta-label">Datum</span><span class="doc-view-meta-value">${esc(d.date)}</span></div>`:'')+
+    (d.tags?.length?`<div class="doc-view-meta-item"><span class="doc-view-meta-label">Tags</span><span class="doc-view-meta-value">${d.tags.map(t=>esc(t)).join(', ')}</span></div>`:'');
+  document.getElementById('view-content').textContent=d.content;
+  const vd=document.getElementById('view-versions');
+  if(d.versions?.length){
+    vd.innerHTML=`<div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border)"><div style="font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--text-dim);margin-bottom:8px">Versionshistorie</div>
+      <div class="versions-list">${d.versions.map((v,i)=>`
+        <div class="ver-item">
+          <span class="ver-tag">${esc(v.tag)}</span><span class="ver-msg">${esc(v.msg||'')}</span>
+          <span class="ver-date">${v.date||''}</span>
+          ${LabAPI.isOwner()?`<button class="ver-del" onclick="delVersion('${d.path}',${i})">✕</button>`:''}
+        </div>`).join('')}
+      </div></div>`;
+  }else{vd.innerHTML='';}
+  const eb=document.getElementById('view-edit-btn');if(eb)eb.style.display=LabAPI.isOwner()?'':'none';
+  openModal('modal-view');
+}
+function editFromView(){if(viewingDoc)editDoc(viewingDoc.path);}
 
-async function saveDoc() {
-  const title = document.getElementById('doc-title').value.trim();
-  if(!title){document.getElementById('doc-title').focus();return;}
-  const docs = await loadDocs();
-  const entry = {
-    id: editingDocId || ('doc-'+Date.now()),
-    projectId: editingProjectId,
-    icon: selIcon,
-    title,
-    version: document.getElementById('doc-version').value.trim(),
-    date: document.getElementById('doc-date').value.trim(),
-    tags: document.getElementById('doc-tags').value.split(',').map(t=>t.trim()).filter(Boolean),
-    notes: document.getElementById('doc-notes').value.trim(),
-    badge: document.getElementById('doc-badge').value,
-    versions: editingDocId ? ((docs.entries||[]).find(x=>x.id===editingDocId)||{}).versions||[] : []
-  };
-  if(editingDocId){
-    const idx=(docs.entries||[]).findIndex(x=>x.id===editingDocId);
-    docs.entries[idx]=entry;
-  } else {
-    if(!docs.entries) docs.entries=[];
-    docs.entries.push(entry);
-  }
-  await saveDocs(docs);
-  closeModal('modal-doc');
-  render();
+async function delVersion(path,idx){
+  const d=allDocs.find(x=>x.path===path);if(!d)return;
+  const versions=[...(d.versions||[])];versions.splice(idx,1);
+  const meta={icon:d.icon,title:d.title,version:d.version,date:d.date,tags:d.tags,badge:d.badge};
+  const md=serializeDoc(meta,d.content,versions);
+  await LabAPI.writefile(d.path,md,d.sha);
+  await initDocs();closeModal('modal-view');
 }
 
-async function confirmDelDoc(id) {
-  const docs = await loadDocs();
-  const e = (docs.entries||[]).find(x=>x.id===id);
-  document.getElementById('confirm-title').textContent = `"${e.title}" löschen?`;
-  document.getElementById('confirm-sub').textContent = 'Dieses Dokument wird unwiderruflich entfernt.';
-  pendingConfirm = async () => {
-    docs.entries = (docs.entries||[]).filter(x=>x.id!==id);
-    await saveDocs(docs);
-    render();
-  };
+function confirmDelDoc(path){
+  const d=allDocs.find(x=>x.path===path);if(!d)return;
+  document.getElementById('confirm-title').textContent=`"${d.title}" löschen?`;
+  document.getElementById('confirm-sub').textContent='Das .md-Dokument wird aus GitHub gelöscht — auch in Obsidian weg nach git pull.';
+  pendingConfirm=async()=>{await LabAPI.deletefile(d.path,d.sha);await initDocs();};
   document.getElementById('confirm-overlay').classList.add('open');
 }
 
-// ── VERSIONS ──
-function openAddVersion(docId) {
-  versionDocId = docId;
-  document.getElementById('ver-tag').value='';
-  document.getElementById('ver-msg').value='';
-  document.getElementById('ver-date').value='';
-  openModal('modal-version');
-  setTimeout(()=>document.getElementById('ver-tag').focus(),100);
+function renderDocIconGrid(){
+  document.getElementById('doc-icon-grid').innerHTML=DOC_ICONS.map(i=>`<div class="icon-opt${i===selectedIcon?' sel':''}" onclick="pickDocIcon('${i}')">${i}</div>`).join('');
 }
-
-async function saveVersion() {
-  const tag = document.getElementById('ver-tag').value.trim();
-  const msg = document.getElementById('ver-msg').value.trim();
-  if(!tag){document.getElementById('ver-tag').focus();return;}
-  const docs = await loadDocs();
-  const e = (docs.entries||[]).find(x=>x.id===versionDocId);
-  if(!e) return;
-  if(!e.versions) e.versions=[];
-  e.versions.unshift({ tag, msg, date: document.getElementById('ver-date').value.trim() });
-  await saveDocs(docs);
-  closeModal('modal-version');
-  render();
-}
-
-async function delVersion(docId, idx) {
-  const docs = await loadDocs();
-  const e = (docs.entries||[]).find(x=>x.id===docId);
-  if(!e||!e.versions) return;
-  e.versions.splice(idx,1);
-  await saveDocs(docs);
-  render();
-}
+function pickDocIcon(i){selectedIcon=i;renderDocIconGrid();}
 
 // ── UTILS ──
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function openModal(id){document.getElementById(id).classList.add('open');}
 function closeModal(id){document.getElementById(id).classList.remove('open');}
 function closeConfirm(){document.getElementById('confirm-overlay').classList.remove('open');pendingConfirm=null;}
-
 document.getElementById('confirm-ok').onclick=()=>{if(pendingConfirm)pendingConfirm();closeConfirm();};
 document.querySelectorAll('.modal-overlay').forEach(el=>el.addEventListener('click',e=>{if(e.target===el)el.classList.remove('open');}));
-document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.modal-overlay.open,.confirm-overlay.open').forEach(el=>el.classList.remove('open'));});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeMobileNav();document.querySelectorAll('.modal-overlay.open,.confirm-overlay.open').forEach(el=>el.classList.remove('open'));}});
 
 LabAPI.init(updateAuthUI);
-render();
+initDocs();
 </script>
 </body>
 </html>
