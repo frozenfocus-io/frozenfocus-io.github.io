@@ -737,8 +737,6 @@ function fmtDocsNew(docs, projectId) {
   if (!entries.length) return '*Keine Docs-Einträge vorhanden.*\n\n';
   return entries.map(d => `### ${d.title}${d.version ? ` (${d.version})` : ''}\n${d.date ? `*${d.date}*\n\n` : ''}${d.content}\n\n`).join('');
 }
-// fmtDocs replaced by fmtDocsNew above
-}
 
 // ═══════════════════════════════════════════
 // UTILS
