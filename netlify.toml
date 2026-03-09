@@ -1,6 +1,9 @@
 [build]
   functions = "netlify/functions"
 
+[build.environment]
+  NODE_VERSION = "18"
+
 # Route /api/* to the netlify function
 [[redirects]]
   from = "/api"
