@@ -409,7 +409,7 @@ const LabAPI = (() => {
   }
 
   async function _fetchMe(){
-    try{const res=await _apiFetch('/api?action=me');if(res.ok){const d=await res.json();_isOwner=d.isOwner;_perms=d.permissions||{};}}catch(e){console.warn('fetchMe failed',e);}
+    try{const res=await _apiFetch('/.netlify/functions/api?action=me');if(res.ok){const d=await res.json();_isOwner=d.isOwner;_perms=d.permissions||{};}}catch(e){console.warn('fetchMe failed',e);}
   }
 
   function _apiFetch(url,opts={}){
