@@ -1,0 +1,1022 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Knowledge Base — lab.notes</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;0,700;1,300&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg:        #07090a;
+      --bg-raised: #0d1114;
+      --bg-card:   #101518;
+      --border:    #1c2830;
+      --border-hi: #2a404e;
+      --accent:    #29e07f;
+      --accent-dim:#1a6e43;
+      --amber:     #f0a843;
+      --red:       #e05a5a;
+      --red-dim:   #5a1a1a;
+      --text:      #dde8e2;
+      --text-mid:  #7a9e8e;
+      --text-dim:  #3a5548;
+      --scan:      rgba(0,255,120,0.015);
+      --font-mono: 'JetBrains Mono', monospace;
+      --font-dis:  'Syne', sans-serif;
+      --sidebar-w: 260px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-mono);
+      font-size: 14px;
+      line-height: 1.7;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background: repeating-linear-gradient(0deg, transparent, transparent 2px, var(--scan) 2px, var(--scan) 4px);
+      pointer-events: none; z-index: 100;
+    }
+
+    body::after {
+      content: '';
+      position: fixed; inset: 0;
+      background-image:
+        linear-gradient(var(--border) 1px, transparent 1px),
+        linear-gradient(90deg, var(--border) 1px, transparent 1px);
+      background-size: 40px 40px;
+      opacity: 0.35;
+      pointer-events: none; z-index: 0;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: sticky; top: 0; z-index: 50;
+      background: rgba(7,9,10,0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+    }
+
+    .nav-inner {
+      max-width: 1200px; margin: 0 auto;
+      display: flex; align-items: center;
+      justify-content: space-between; height: 56px;
+    }
+
+    .nav-logo {
+      font-family: var(--font-dis); font-weight: 800;
+      font-size: 17px; letter-spacing: -0.5px;
+      color: var(--accent); text-decoration: none;
+      display: flex; align-items: center; gap: 8px;
+    }
+
+    .nav-logo span { color: var(--text-mid); font-weight: 400; font-size: 13px; font-family: var(--font-mono); }
+
+    .nav-links { display: flex; gap: 2px; list-style: none; }
+
+    .nav-links a {
+      color: var(--text-mid); text-decoration: none;
+      padding: 6px 14px; border-radius: 4px;
+      font-size: 12px; letter-spacing: 0.05em;
+      transition: color 0.2s, background 0.2s;
+    }
+
+    .nav-links a:hover, .nav-links a.active {
+      color: var(--accent); background: rgba(41,224,127,0.07);
+    }
+
+    .nav-status { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--text-dim); }
+
+    .status-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--accent); box-shadow: 0 0 6px var(--accent);
+      animation: pulse 2.4s ease-in-out infinite;
+    }
+
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+    /* ── PAGE LAYOUT ── */
+    .page-wrap {
+      position: relative; z-index: 1;
+      max-width: 1200px; margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    .page-header {
+      padding: 48px 0 32px;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: flex-end;
+      justify-content: space-between; gap: 16px; flex-wrap: wrap;
+    }
+
+    .breadcrumb {
+      font-size: 11px; color: var(--text-dim);
+      margin-bottom: 10px; display: flex; align-items: center; gap: 8px;
+    }
+
+    .breadcrumb a { color: var(--text-dim); text-decoration: none; }
+    .breadcrumb a:hover { color: var(--accent); }
+
+    .page-title {
+      font-family: var(--font-dis); font-size: 28px;
+      font-weight: 800; letter-spacing: -1px; color: var(--text);
+    }
+
+    .page-sub { font-size: 12px; color: var(--text-mid); margin-top: 4px; }
+
+    /* ── MAIN SPLIT ── */
+    .kb-layout {
+      display: grid;
+      grid-template-columns: var(--sidebar-w) 1fr;
+      gap: 0;
+      min-height: calc(100vh - 200px);
+      margin-top: 0;
+    }
+
+    /* ── SIDEBAR ── */
+    .kb-sidebar {
+      border-right: 1px solid var(--border);
+      padding: 28px 0;
+      position: sticky;
+      top: 56px;
+      height: calc(100vh - 56px);
+      overflow-y: auto;
+    }
+
+    .sidebar-section-label {
+      font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
+      color: var(--text-dim); padding: 0 20px; margin-bottom: 10px;
+    }
+
+    .cat-list { list-style: none; margin-bottom: 20px; }
+
+    .cat-item {
+      display: flex; align-items: center;
+      gap: 0; position: relative;
+    }
+
+    .cat-btn {
+      flex: 1; text-align: left;
+      background: transparent; border: none;
+      padding: 8px 20px; cursor: pointer;
+      font-family: var(--font-mono); font-size: 12px;
+      color: var(--text-mid); border-radius: 0;
+      transition: color 0.2s, background 0.2s;
+      display: flex; align-items: center; gap: 10px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+
+    .cat-btn:hover { color: var(--text); background: rgba(255,255,255,0.03); }
+
+    .cat-btn.active {
+      color: var(--accent);
+      background: rgba(41,224,127,0.07);
+      border-right: 2px solid var(--accent);
+    }
+
+    .cat-icon { font-size: 14px; flex-shrink: 0; }
+
+    .cat-name { flex: 1; overflow: hidden; text-overflow: ellipsis; }
+
+    .cat-count {
+      font-size: 10px; color: var(--text-dim);
+      background: var(--bg-raised); border: 1px solid var(--border);
+      border-radius: 10px; padding: 1px 6px; flex-shrink: 0;
+    }
+
+    .cat-actions {
+      display: none; gap: 2px; padding-right: 8px; flex-shrink: 0;
+    }
+
+    .cat-item:hover .cat-actions { display: flex; }
+
+    .cat-action-btn {
+      width: 22px; height: 22px; border-radius: 3px;
+      background: transparent; border: none;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; cursor: pointer; color: var(--text-dim);
+      transition: all 0.15s;
+    }
+
+    .cat-action-btn:hover { background: var(--bg-raised); }
+    .cat-action-btn.del:hover { color: var(--red); }
+    .cat-action-btn.edit:hover { color: var(--amber); }
+
+    .add-cat-btn {
+      width: calc(100% - 40px); margin: 4px 20px;
+      background: transparent; border: 1px dashed var(--border);
+      border-radius: 4px; padding: 7px 12px;
+      font-family: var(--font-mono); font-size: 11px;
+      color: var(--text-dim); cursor: pointer;
+      display: flex; align-items: center; gap: 8px;
+      transition: all 0.2s;
+    }
+
+    .add-cat-btn:hover { border-color: var(--accent-dim); color: var(--accent); }
+
+    /* ── MAIN CONTENT ── */
+    .kb-main { padding: 28px 32px; }
+
+    .kb-main-header {
+      display: flex; align-items: center;
+      justify-content: space-between; margin-bottom: 28px;
+      padding-bottom: 20px; border-bottom: 1px solid var(--border);
+      gap: 16px; flex-wrap: wrap;
+    }
+
+    .kb-main-title {
+      font-family: var(--font-dis); font-size: 22px;
+      font-weight: 800; color: var(--text); letter-spacing: -0.5px;
+      display: flex; align-items: center; gap: 12px;
+    }
+
+    .kb-main-icon { font-size: 22px; }
+
+    .btn {
+      font-family: var(--font-mono); font-size: 11px;
+      padding: 7px 14px; border-radius: 4px; cursor: pointer;
+      border: 1px solid; transition: all 0.2s;
+      display: flex; align-items: center; gap: 6px;
+      letter-spacing: 0.05em;
+    }
+
+    .btn-primary {
+      color: var(--accent); border-color: var(--accent-dim);
+      background: rgba(41,224,127,0.07);
+    }
+
+    .btn-primary:hover { background: rgba(41,224,127,0.15); }
+
+    .btn-ghost {
+      color: var(--text-mid); border-color: var(--border);
+      background: transparent;
+    }
+
+    .btn-ghost:hover { color: var(--text); border-color: var(--border-hi); }
+
+    .btn-danger {
+      color: var(--red); border-color: var(--red-dim);
+      background: transparent;
+    }
+
+    .btn-danger:hover { background: rgba(224,90,90,0.08); }
+
+    /* ── NOTES GRID ── */
+    .notes-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 14px;
+    }
+
+    .note-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 6px; padding: 20px;
+      transition: border-color 0.2s, transform 0.2s;
+      cursor: pointer; position: relative;
+    }
+
+    .note-card:hover { border-color: var(--border-hi); transform: translateY(-1px); }
+
+    .note-card-top {
+      display: flex; justify-content: space-between;
+      align-items: flex-start; margin-bottom: 10px;
+    }
+
+    .note-title {
+      font-family: var(--font-dis); font-size: 14px;
+      font-weight: 700; color: var(--text); letter-spacing: -0.2px;
+      flex: 1; margin-right: 8px;
+    }
+
+    .note-menu-btn {
+      width: 24px; height: 24px; border-radius: 3px;
+      background: transparent; border: none;
+      color: var(--text-dim); cursor: pointer; font-size: 14px;
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; transition: opacity 0.15s;
+      flex-shrink: 0;
+    }
+
+    .note-card:hover .note-menu-btn { opacity: 1; }
+    .note-menu-btn:hover { color: var(--text); background: var(--bg-raised); }
+
+    .note-preview {
+      font-size: 11px; color: var(--text-mid);
+      line-height: 1.7; margin-bottom: 14px;
+      display: -webkit-box; -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical; overflow: hidden;
+    }
+
+    .note-footer {
+      display: flex; justify-content: space-between;
+      align-items: center; padding-top: 12px;
+      border-top: 1px solid var(--border);
+    }
+
+    .note-date { font-size: 10px; color: var(--text-dim); }
+
+    .note-tags { display: flex; gap: 4px; flex-wrap: wrap; }
+
+    .note-tag {
+      font-size: 10px; color: var(--text-dim);
+      border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px;
+    }
+
+    /* ── EMPTY STATE ── */
+    .empty-state {
+      text-align: center; padding: 80px 24px;
+      color: var(--text-dim);
+    }
+
+    .empty-icon { font-size: 32px; margin-bottom: 16px; opacity: 0.3; }
+    .empty-title { font-family: var(--font-dis); font-size: 16px; color: var(--text-mid); margin-bottom: 8px; }
+    .empty-sub { font-size: 12px; margin-bottom: 24px; }
+
+    /* ── NO CATEGORY STATE ── */
+    .no-cat-state {
+      text-align: center; padding: 100px 24px;
+      color: var(--text-dim);
+    }
+
+    /* ── MODAL ── */
+    .modal-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(4px);
+      z-index: 200;
+      display: none; align-items: center; justify-content: center;
+      padding: 24px;
+    }
+
+    .modal-overlay.open { display: flex; }
+
+    .modal {
+      background: var(--bg-card); border: 1px solid var(--border-hi);
+      border-radius: 8px; width: 100%; max-width: 600px;
+      max-height: 90vh; overflow-y: auto;
+      animation: modalIn 0.2s ease;
+    }
+
+    @keyframes modalIn { from { opacity:0; transform:scale(0.96) translateY(8px); } to { opacity:1; transform:none; } }
+
+    .modal-header {
+      padding: 20px 24px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+
+    .modal-title {
+      font-family: var(--font-dis); font-size: 16px;
+      font-weight: 700; color: var(--text);
+    }
+
+    .modal-close {
+      width: 28px; height: 28px; border-radius: 4px;
+      background: transparent; border: none;
+      color: var(--text-dim); cursor: pointer; font-size: 16px;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.15s;
+    }
+
+    .modal-close:hover { color: var(--text); background: var(--bg-raised); }
+
+    .modal-body { padding: 24px; }
+
+    .form-group { margin-bottom: 18px; }
+
+    .form-label {
+      display: block; font-size: 11px; letter-spacing: 0.1em;
+      text-transform: uppercase; color: var(--text-dim); margin-bottom: 8px;
+    }
+
+    .form-input {
+      width: 100%; background: var(--bg-raised);
+      border: 1px solid var(--border); border-radius: 4px;
+      padding: 10px 14px; font-family: var(--font-mono);
+      font-size: 13px; color: var(--text);
+      transition: border-color 0.2s; outline: none;
+    }
+
+    .form-input:focus { border-color: var(--accent-dim); }
+
+    .form-textarea {
+      width: 100%; background: var(--bg-raised);
+      border: 1px solid var(--border); border-radius: 4px;
+      padding: 12px 14px; font-family: var(--font-mono);
+      font-size: 12px; color: var(--text); resize: vertical;
+      min-height: 180px; line-height: 1.7;
+      transition: border-color 0.2s; outline: none;
+    }
+
+    .form-textarea:focus { border-color: var(--accent-dim); }
+
+    .form-hint { font-size: 11px; color: var(--text-dim); margin-top: 6px; }
+
+    .modal-footer {
+      padding: 16px 24px; border-top: 1px solid var(--border);
+      display: flex; justify-content: flex-end; gap: 8px;
+    }
+
+    /* ── NOTE VIEW MODAL ── */
+    .note-view-content {
+      font-size: 13px; color: var(--text-mid);
+      line-height: 1.85; white-space: pre-wrap;
+    }
+
+    .note-view-content strong { color: var(--text); }
+
+    /* ── ICON PICKER ── */
+    .icon-grid {
+      display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px;
+    }
+
+    .icon-option {
+      width: 36px; height: 36px; border-radius: 4px;
+      background: var(--bg-raised); border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; cursor: pointer; transition: all 0.15s;
+    }
+
+    .icon-option:hover, .icon-option.selected {
+      border-color: var(--accent-dim); background: rgba(41,224,127,0.08);
+    }
+
+    /* ── CONFIRM DIALOG ── */
+    .confirm-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.8);
+      backdrop-filter: blur(4px);
+      z-index: 300;
+      display: none; align-items: center; justify-content: center;
+    }
+
+    .confirm-overlay.open { display: flex; }
+
+    .confirm-box {
+      background: var(--bg-card); border: 1px solid var(--red-dim);
+      border-radius: 8px; padding: 28px; max-width: 380px; width: 90%;
+      text-align: center;
+    }
+
+    .confirm-icon { font-size: 28px; margin-bottom: 14px; }
+    .confirm-title { font-family: var(--font-dis); font-size: 16px; color: var(--text); margin-bottom: 8px; }
+    .confirm-sub { font-size: 12px; color: var(--text-mid); margin-bottom: 24px; }
+    .confirm-btns { display: flex; gap: 8px; justify-content: center; }
+
+    /* ── FOOTER ── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 28px 24px; margin-top: 40px;
+      display: flex; justify-content: space-between;
+      align-items: center; flex-wrap: wrap; gap: 8px;
+      font-size: 11px; color: var(--text-dim);
+      max-width: 1200px; margin-left: auto; margin-right: auto;
+      position: relative; z-index: 1;
+    }
+
+    .footer-sig { color: var(--accent); }
+
+    /* ── SCROLLBAR ── */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--border-hi); }
+
+    @media (max-width: 700px) {
+      .kb-layout { grid-template-columns: 1fr; }
+      .kb-sidebar { position: static; height: auto; border-right: none; border-bottom: 1px solid var(--border); }
+    }
+  </style>
+</head>
+
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-inner">
+    <a href="index.html" class="nav-logo">
+      lab.notes
+      <span>/ EE Engineering</span>
+    </a>
+    <ul class="nav-links">
+      <li><a href="index.html#projekte">Projekte</a></li>
+      <li><a href="docs.html">Docs</a></li>
+      <li><a href="kb.html" class="active">Knowledge Base</a></li>
+    </ul>
+    <div class="nav-status">
+      <div class="status-dot"></div>
+      aktiv
+    </div>
+  </div>
+</nav>
+
+<div class="page-wrap">
+  <div class="page-header">
+    <div>
+      <div class="breadcrumb">
+        <a href="index.html">lab.notes</a>
+        <span>/</span>
+        <span>Knowledge Base</span>
+      </div>
+      <h1 class="page-title">Knowledge Base</h1>
+      <p class="page-sub">Konzepte · Theorie · Lernnotizen · projektübergreifendes Wissen</p>
+    </div>
+    <div id="header-stats" style="font-size:11px; color:var(--text-dim);"></div>
+  </div>
+
+  <div class="kb-layout">
+    <!-- SIDEBAR -->
+    <aside class="kb-sidebar">
+      <div class="sidebar-section-label">Kategorien</div>
+      <ul class="cat-list" id="cat-list"></ul>
+      <button class="add-cat-btn" onclick="openAddCategory()">
+        <span>+</span> Kategorie hinzufügen
+      </button>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="kb-main" id="kb-main">
+      <div class="no-cat-state">
+        <div class="empty-icon">◈</div>
+        <div class="empty-title">Wähle eine Kategorie</div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<footer>
+  <span>lab.notes — Persönliches Engineering-Journal</span>
+  <span class="footer-sig">built by hand · 2026</span>
+</footer>
+
+<!-- ── ADD/EDIT CATEGORY MODAL ── -->
+<div class="modal-overlay" id="modal-cat">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="modal-cat-title">Neue Kategorie</span>
+      <button class="modal-close" onclick="closeModal('modal-cat')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Name</label>
+        <input class="form-input" id="cat-name-input" placeholder="z.B. Leistungselektronik" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Icon</label>
+        <div class="icon-grid" id="icon-grid"></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Projekt zuordnen</label>
+        <div id="cat-project-picker" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;"></div>
+        <div class="form-hint">Gewählte Projekte bekommen diese Kategorie in ihrem KI-Export.</div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-cat')">Abbrechen</button>
+      <button class="btn btn-primary" onclick="saveCategory()">Speichern</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── ADD/EDIT NOTE MODAL ── -->
+<div class="modal-overlay" id="modal-note">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="modal-note-title">Neue Notiz</span>
+      <button class="modal-close" onclick="closeModal('modal-note')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Titel</label>
+        <input class="form-input" id="note-title-input" placeholder="z.B. MOSFET Schaltverhalten" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Inhalt</label>
+        <textarea class="form-textarea" id="note-content-input" placeholder="Deine Notizen hier...&#10;&#10;Markdown wird unterstützt:&#10;**fett**, # Überschrift, - Liste"></textarea>
+        <div class="form-hint">Tipp: Markdown funktioniert — **fett**, *kursiv*, # Titel, - Listenpunkt</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Tags (kommagetrennt)</label>
+        <input class="form-input" id="note-tags-input" placeholder="z.B. MOSFET, Schalten, Gate" />
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-note')">Abbrechen</button>
+      <button class="btn btn-primary" onclick="saveNote()">Speichern</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── VIEW NOTE MODAL ── -->
+<div class="modal-overlay" id="modal-view">
+  <div class="modal" style="max-width:680px;">
+    <div class="modal-header">
+      <span class="modal-title" id="view-note-title"></span>
+      <button class="modal-close" onclick="closeModal('modal-view')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="note-view-content" id="view-note-content"></div>
+      <div style="margin-top:16px; display:flex; gap:6px; flex-wrap:wrap;" id="view-note-tags"></div>
+    </div>
+    <div class="modal-footer">
+      <span id="view-note-date" style="font-size:11px;color:var(--text-dim);margin-right:auto;"></span>
+      <button class="btn btn-ghost" id="view-edit-btn">Bearbeiten</button>
+      <button class="btn btn-ghost" onclick="closeModal('modal-view')">Schließen</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── CONFIRM DIALOG ── -->
+<div class="confirm-overlay" id="confirm-overlay">
+  <div class="confirm-box">
+    <div class="confirm-icon">⚠</div>
+    <div class="confirm-title" id="confirm-title">Sicher?</div>
+    <div class="confirm-sub" id="confirm-sub"></div>
+    <div class="confirm-btns">
+      <button class="btn btn-ghost" onclick="closeConfirm()">Abbrechen</button>
+      <button class="btn btn-danger" id="confirm-ok-btn">Löschen</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ── DATA ──
+  const ICONS = ['⚙️','🔁','💾','📐','🧮','📡','🔌','⚡','🛠️','📊','🔬','🧪','📝','💡','🔧','🖥️','📦','🗂️','🔋','🎛️'];
+
+  const DEFAULT_DATA = {
+    categories: [
+      { id: 'cat-1', name: 'Leistungselektronik', icon: '⚙️' },
+      { id: 'cat-2', name: 'BLDC Motorsteuerung', icon: '🔁' },
+      { id: 'cat-3', name: 'Embedded / STM32',    icon: '💾' },
+      { id: 'cat-4', name: 'Schaltungsdesign / KiCad', icon: '📐' },
+    ],
+    notes: [
+      {
+        id: 'note-1', catId: 'cat-1',
+        title: 'MOSFET Grundlagen',
+        content: '**MOSFET = Metal-Oxide-Semiconductor Field-Effect Transistor**\n\nDrei Anschlüsse: Gate (G), Drain (D), Source (S)\n\n- N-Kanal: leitet wenn V_GS > V_th (typisch 2–4V)\n- P-Kanal: leitet wenn V_GS < V_th (negativ)\n\n**Wichtige Parameter:**\n- V_DS(max): maximale Drain-Source-Spannung\n- I_D(max): maximaler Drain-Strom\n- R_DS(on): Widerstand im eingeschalteten Zustand → bestimmt Verlustleistung\n- Q_g: Gate-Ladung → beeinflusst Schaltgeschwindigkeit\n\n**Verlustleistung:**\nP = I² × R_DS(on) + f × E_sw\n(Leitverluste + Schaltverluste)',
+        tags: ['MOSFET', 'Grundlagen', 'Leistung'],
+        date: '2026-03-05'
+      },
+      {
+        id: 'note-2', catId: 'cat-1',
+        title: 'H-Brücke Topologie',
+        content: '**H-Brücke für Motorsteuerung**\n\nVier Schalter (Q1–Q4) in H-Form:\n- Q1 + Q4 an → Motor dreht vorwärts\n- Q2 + Q3 an → Motor dreht rückwärts\n- Alle aus → Motor läuft aus\n- Q1 + Q3 ODER Q2 + Q4 → Kurzschluss! → nie gleichzeitig!\n\n**Dead-Time:**\nKurze Pause zwischen High-Side aus und Low-Side ein → verhindert Shoot-Through (Kurzschluss durch gleichzeitiges Leiten).',
+        tags: ['H-Brücke', 'Topologie'],
+        date: '2026-03-06'
+      },
+    ]
+  };
+
+  function loadData() {
+    try {
+      const raw = localStorage.getItem('kb-data');
+      return raw ? JSON.parse(raw) : JSON.parse(JSON.stringify(DEFAULT_DATA));
+    } catch { return JSON.parse(JSON.stringify(DEFAULT_DATA)); }
+  }
+
+  function saveData(data) {
+    localStorage.setItem('kb-data', JSON.stringify(data));
+  }
+
+  let data = loadData();
+  let activeCatId = null;
+  let editingCatId = null;
+  let editingNoteId = null;
+  let selectedIcon = '📝';
+  let pendingConfirm = null;
+  let viewingNoteId = null;
+  let selectedProjectIds = [];
+
+  function loadProjects() {
+    try { const r = localStorage.getItem('lab-projects'); return r ? JSON.parse(r) : []; }
+    catch { return []; }
+  }
+
+  function renderProjectPicker(currentIds) {
+    const projects = loadProjects();
+    const picker = document.getElementById('cat-project-picker');
+    if (!projects.length) {
+      picker.innerHTML = `<span style="font-size:11px;color:var(--text-dim);">Keine Projekte vorhanden — erst auf der Homepage anlegen.</span>`;
+      return;
+    }
+    picker.innerHTML = projects.map(p => {
+      const active = selectedProjectIds.includes(p.id);
+      return `<button type="button" onclick="toggleProjectId('${p.id}')" style="
+        font-family:var(--font-mono);font-size:11px;padding:5px 12px;border-radius:4px;cursor:pointer;
+        border:1px solid ${active ? 'var(--accent-dim)' : 'var(--border)'};
+        color:${active ? 'var(--accent)' : 'var(--text-dim)'};
+        background:${active ? 'rgba(41,224,127,0.1)' : 'transparent'};
+        transition:all .15s;" id="proj-pick-${p.id}">${p.icon} ${esc(p.name)}</button>`;
+    }).join('');
+  }
+
+  function toggleProjectId(id) {
+    if (selectedProjectIds.includes(id)) {
+      selectedProjectIds = selectedProjectIds.filter(x => x !== id);
+    } else {
+      selectedProjectIds.push(id);
+    }
+    renderProjectPicker();
+  }
+
+  // ── RENDER ──
+  function render() {
+    renderSidebar();
+    renderMain();
+    renderStats();
+  }
+
+  function renderStats() {
+    const total = data.notes.length;
+    const cats = data.categories.length;
+    document.getElementById('header-stats').textContent =
+      `${cats} Kategorien · ${total} Notizen`;
+  }
+
+  function renderSidebar() {
+    const list = document.getElementById('cat-list');
+    list.innerHTML = '';
+    data.categories.forEach(cat => {
+      const count = data.notes.filter(n => n.catId === cat.id).length;
+      const projects = loadProjects();
+      const linked = (cat.projectIds || []).map(pid => projects.find(p => p.id === pid)).filter(Boolean);
+      const li = document.createElement('li');
+      li.className = 'cat-item';
+      li.innerHTML = `
+        <button class="cat-btn ${activeCatId === cat.id ? 'active' : ''}" onclick="selectCat('${cat.id}')">
+          <span class="cat-icon">${cat.icon}</span>
+          <span class="cat-name">${esc(cat.name)}</span>
+          <span class="cat-count">${count}</span>
+        </button>
+        <div class="cat-actions">
+          <button class="cat-action-btn edit" title="Umbenennen" onclick="openEditCategory('${cat.id}')">✎</button>
+          <button class="cat-action-btn del" title="Löschen" onclick="confirmDeleteCat('${cat.id}')">✕</button>
+        </div>
+      `;
+      list.appendChild(li);
+    });
+  }
+
+  function renderMain() {
+    const main = document.getElementById('kb-main');
+    if (!activeCatId) {
+      main.innerHTML = `<div class="no-cat-state">
+        <div class="empty-icon">◈</div>
+        <div class="empty-title" style="font-family:var(--font-dis);font-size:16px;color:var(--text-mid);">Wähle eine Kategorie</div>
+      </div>`;
+      return;
+    }
+    const cat = data.categories.find(c => c.id === activeCatId);
+    if (!cat) return;
+    const notes = data.notes.filter(n => n.catId === activeCatId);
+
+    main.innerHTML = `
+      <div class="kb-main-header">
+        <div class="kb-main-title">
+          <span class="kb-main-icon">${cat.icon}</span>
+          ${esc(cat.name)}
+        </div>
+        <button class="btn btn-primary" onclick="openAddNote()">+ Notiz hinzufügen</button>
+      </div>
+      ${notes.length === 0
+        ? `<div class="empty-state">
+            <div class="empty-icon">📄</div>
+            <div class="empty-title">Noch keine Notizen</div>
+            <div class="empty-sub">Füge deine erste Notiz zu dieser Kategorie hinzu.</div>
+            <button class="btn btn-primary" onclick="openAddNote()">+ Erste Notiz</button>
+          </div>`
+        : `<div class="notes-grid">${notes.map(renderNoteCard).join('')}</div>`
+      }
+    `;
+  }
+
+  function renderNoteCard(note) {
+    const preview = note.content.replace(/[#*_`]/g, '').substring(0, 120) + (note.content.length > 120 ? '…' : '');
+    const tags = note.tags || [];
+    return `
+      <div class="note-card" onclick="viewNote('${note.id}')">
+        <div class="note-card-top">
+          <div class="note-title">${esc(note.title)}</div>
+          <button class="note-menu-btn" onclick="event.stopPropagation(); openEditNote('${note.id}')">✎</button>
+        </div>
+        <div class="note-preview">${esc(preview)}</div>
+        <div class="note-footer">
+          <span class="note-date">${formatDate(note.date)}</span>
+          <div class="note-tags">${tags.slice(0,3).map(t => `<span class="note-tag">${esc(t.trim())}</span>`).join('')}</div>
+        </div>
+      </div>
+    `;
+  }
+
+  // ── CATEGORY CRUD ──
+  function selectCat(id) {
+    activeCatId = id;
+    render();
+  }
+
+  function openAddCategory() {
+    editingCatId = null;
+    selectedIcon = '📝';
+    selectedProjectIds = [];
+    document.getElementById('modal-cat-title').textContent = 'Neue Kategorie';
+    document.getElementById('cat-name-input').value = '';
+    renderIconGrid();
+    renderProjectPicker();
+    openModal('modal-cat');
+    setTimeout(() => document.getElementById('cat-name-input').focus(), 100);
+  }
+
+  function openEditCategory(id) {
+    editingCatId = id;
+    const cat = data.categories.find(c => c.id === id);
+    selectedIcon = cat.icon;
+    selectedProjectIds = cat.projectIds ? [...cat.projectIds] : [];
+    document.getElementById('modal-cat-title').textContent = 'Kategorie bearbeiten';
+    document.getElementById('cat-name-input').value = cat.name;
+    renderIconGrid();
+    renderProjectPicker();
+    openModal('modal-cat');
+  }
+
+  function renderIconGrid() {
+    const grid = document.getElementById('icon-grid');
+    grid.innerHTML = ICONS.map(icon => `
+      <div class="icon-option ${icon === selectedIcon ? 'selected' : ''}" onclick="selectIcon('${icon}')">${icon}</div>
+    `).join('');
+  }
+
+  function selectIcon(icon) {
+    selectedIcon = icon;
+    renderIconGrid();
+  }
+
+  function saveCategory() {
+    const name = document.getElementById('cat-name-input').value.trim();
+    if (!name) { document.getElementById('cat-name-input').focus(); return; }
+
+    if (editingCatId) {
+      const cat = data.categories.find(c => c.id === editingCatId);
+      cat.name = name;
+      cat.icon = selectedIcon;
+      cat.projectIds = [...selectedProjectIds];
+    } else {
+      data.categories.push({ id: 'cat-' + Date.now(), name, icon: selectedIcon, projectIds: [...selectedProjectIds] });
+    }
+    saveData(data);
+    closeModal('modal-cat');
+    render();
+  }
+
+  function confirmDeleteCat(id) {
+    const cat = data.categories.find(c => c.id === id);
+    const noteCount = data.notes.filter(n => n.catId === id).length;
+    document.getElementById('confirm-title').textContent = `"${cat.name}" löschen?`;
+    document.getElementById('confirm-sub').textContent =
+      noteCount > 0
+        ? `Diese Kategorie enthält ${noteCount} Notiz${noteCount > 1 ? 'en' : ''}. Alle werden unwiderruflich gelöscht.`
+        : 'Diese Kategorie wird unwiderruflich gelöscht.';
+    pendingConfirm = () => {
+      data.categories = data.categories.filter(c => c.id !== id);
+      data.notes = data.notes.filter(n => n.catId !== id);
+      if (activeCatId === id) activeCatId = null;
+      saveData(data);
+      render();
+    };
+    document.getElementById('confirm-overlay').classList.add('open');
+  }
+
+  // ── NOTE CRUD ──
+  function openAddNote() {
+    editingNoteId = null;
+    document.getElementById('modal-note-title').textContent = 'Neue Notiz';
+    document.getElementById('note-title-input').value = '';
+    document.getElementById('note-content-input').value = '';
+    document.getElementById('note-tags-input').value = '';
+    openModal('modal-note');
+    setTimeout(() => document.getElementById('note-title-input').focus(), 100);
+  }
+
+  function openEditNote(id) {
+    editingNoteId = id;
+    const note = data.notes.find(n => n.id === id);
+    document.getElementById('modal-note-title').textContent = 'Notiz bearbeiten';
+    document.getElementById('note-title-input').value = note.title;
+    document.getElementById('note-content-input').value = note.content;
+    document.getElementById('note-tags-input').value = (note.tags || []).join(', ');
+    openModal('modal-note');
+  }
+
+  function saveNote() {
+    const title = document.getElementById('note-title-input').value.trim();
+    const content = document.getElementById('note-content-input').value.trim();
+    const tagsRaw = document.getElementById('note-tags-input').value.trim();
+    if (!title) { document.getElementById('note-title-input').focus(); return; }
+
+    const tags = tagsRaw ? tagsRaw.split(',').map(t => t.trim()).filter(Boolean) : [];
+    const today = new Date().toISOString().split('T')[0];
+
+    if (editingNoteId) {
+      const note = data.notes.find(n => n.id === editingNoteId);
+      note.title = title;
+      note.content = content;
+      note.tags = tags;
+    } else {
+      data.notes.push({
+        id: 'note-' + Date.now(),
+        catId: activeCatId,
+        title, content, tags,
+        date: today
+      });
+    }
+    saveData(data);
+    closeModal('modal-note');
+    render();
+  }
+
+  function viewNote(id) {
+    viewingNoteId = id;
+    const note = data.notes.find(n => n.id === id);
+    document.getElementById('view-note-title').textContent = note.title;
+    document.getElementById('view-note-content').textContent = note.content;
+    document.getElementById('view-note-date').textContent = formatDate(note.date);
+    const tagsEl = document.getElementById('view-note-tags');
+    tagsEl.innerHTML = (note.tags || []).map(t =>
+      `<span class="note-tag" style="font-size:11px;">${esc(t)}</span>`
+    ).join('');
+    document.getElementById('view-edit-btn').onclick = () => {
+      closeModal('modal-view');
+      openEditNote(id);
+    };
+    openModal('modal-view');
+  }
+
+  // ── MODAL HELPERS ──
+  function openModal(id) {
+    document.getElementById(id).classList.add('open');
+  }
+
+  function closeModal(id) {
+    document.getElementById(id).classList.remove('open');
+  }
+
+  function closeConfirm() {
+    document.getElementById('confirm-overlay').classList.remove('open');
+    pendingConfirm = null;
+  }
+
+  document.getElementById('confirm-ok-btn').onclick = () => {
+    if (pendingConfirm) pendingConfirm();
+    closeConfirm();
+  };
+
+  // Close modals on overlay click
+  document.querySelectorAll('.modal-overlay').forEach(overlay => {
+    overlay.addEventListener('click', e => {
+      if (e.target === overlay) overlay.classList.remove('open');
+    });
+  });
+
+  // Close on Escape
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      document.querySelectorAll('.modal-overlay.open, .confirm-overlay.open')
+        .forEach(el => el.classList.remove('open'));
+    }
+  });
+
+  // ── UTILS ──
+  function esc(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function formatDate(d) {
+    if (!d) return '';
+    const months = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+    const [y, m, day] = d.split('-');
+    return `${parseInt(day)} ${months[parseInt(m)-1]} ${y}`;
+  }
+
+  // ── INIT ──
+  render();
+  if (data.categories.length > 0) {
+    activeCatId = data.categories[0].id;
+    render();
+  }
+</script>
+</body>
+</html>

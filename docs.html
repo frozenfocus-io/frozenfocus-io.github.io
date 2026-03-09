@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Docs — lab.notes</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;0,700;1,300&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg:        #07090a;
+      --bg-raised: #0d1114;
+      --bg-card:   #101518;
+      --border:    #1c2830;
+      --border-hi: #2a404e;
+      --accent:    #29e07f;
+      --accent-dim:#1a6e43;
+      --amber:     #f0a843;
+      --red:       #e05a5a;
+      --text:      #dde8e2;
+      --text-mid:  #7a9e8e;
+      --text-dim:  #3a5548;
+      --scan:      rgba(0,255,120,0.015);
+      --font-mono: 'JetBrains Mono', monospace;
+      --font-dis:  'Syne', sans-serif;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-mono);
+      font-size: 14px;
+      line-height: 1.7;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background: repeating-linear-gradient(0deg, transparent, transparent 2px, var(--scan) 2px, var(--scan) 4px);
+      pointer-events: none; z-index: 100;
+    }
+
+    body::after {
+      content: '';
+      position: fixed; inset: 0;
+      background-image:
+        linear-gradient(var(--border) 1px, transparent 1px),
+        linear-gradient(90deg, var(--border) 1px, transparent 1px);
+      background-size: 40px 40px;
+      opacity: 0.35;
+      pointer-events: none; z-index: 0;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: sticky; top: 0; z-index: 50;
+      background: rgba(7,9,10,0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+    }
+
+    .nav-inner {
+      max-width: 1100px; margin: 0 auto;
+      display: flex; align-items: center;
+      justify-content: space-between; height: 56px;
+    }
+
+    .nav-logo {
+      font-family: var(--font-dis); font-weight: 800;
+      font-size: 17px; letter-spacing: -0.5px;
+      color: var(--accent); text-decoration: none;
+      display: flex; align-items: center; gap: 8px;
+    }
+
+    .nav-logo span { color: var(--text-mid); font-weight: 400; font-size: 13px; font-family: var(--font-mono); }
+
+    .nav-links { display: flex; gap: 2px; list-style: none; }
+
+    .nav-links a {
+      color: var(--text-mid); text-decoration: none;
+      padding: 6px 14px; border-radius: 4px;
+      font-size: 12px; letter-spacing: 0.05em;
+      transition: color 0.2s, background 0.2s;
+    }
+
+    .nav-links a:hover, .nav-links a.active {
+      color: var(--accent); background: rgba(41,224,127,0.07);
+    }
+
+    .nav-status { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--text-dim); }
+
+    .status-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--accent); box-shadow: 0 0 6px var(--accent);
+      animation: pulse 2.4s ease-in-out infinite;
+    }
+
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+    /* ── LAYOUT ── */
+    .site-wrap {
+      position: relative; z-index: 1;
+      max-width: 1100px; margin: 0 auto; padding: 0 24px;
+    }
+
+    /* ── PAGE HEADER ── */
+    .page-header {
+      padding: 60px 0 48px;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: flex-end;
+      justify-content: space-between; gap: 24px; flex-wrap: wrap;
+    }
+
+    .page-header-left {}
+
+    .breadcrumb {
+      font-size: 11px; color: var(--text-dim);
+      margin-bottom: 12px; display: flex;
+      align-items: center; gap: 8px;
+    }
+
+    .breadcrumb a { color: var(--text-dim); text-decoration: none; }
+    .breadcrumb a:hover { color: var(--accent); }
+    .breadcrumb-sep { color: var(--text-dim); }
+
+    .page-title {
+      font-family: var(--font-dis); font-size: 32px;
+      font-weight: 800; letter-spacing: -1px; color: var(--text);
+    }
+
+    .page-sub { font-size: 12px; color: var(--text-mid); margin-top: 6px; }
+
+    .page-header-right {
+      display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
+    }
+
+    /* ── FILTER BAR ── */
+    .filter-bar {
+      display: flex; gap: 8px; flex-wrap: wrap;
+      padding: 24px 0; align-items: center;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 40px;
+    }
+
+    .filter-label { font-size: 11px; color: var(--text-dim); margin-right: 4px; }
+
+    .filter-btn {
+      font-family: var(--font-mono); font-size: 11px;
+      color: var(--text-mid); background: transparent;
+      border: 1px solid var(--border); border-radius: 4px;
+      padding: 4px 12px; cursor: pointer;
+      transition: all 0.2s; letter-spacing: 0.05em;
+    }
+
+    .filter-btn:hover, .filter-btn.active {
+      color: var(--accent); border-color: var(--accent-dim);
+      background: rgba(41,224,127,0.07);
+    }
+
+    /* ── PROJECT GROUP ── */
+    .project-group { margin-bottom: 56px; }
+
+    .group-header {
+      display: flex; align-items: center; gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .group-tag {
+      font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase;
+      color: var(--amber); background: rgba(240,168,67,0.08);
+      border: 1px solid #6b4a18; border-radius: 3px; padding: 2px 8px;
+    }
+
+    .group-title {
+      font-family: var(--font-dis); font-size: 18px;
+      font-weight: 700; color: var(--text); letter-spacing: -0.3px;
+    }
+
+    .group-line { flex: 1; height: 1px; background: var(--border); }
+
+    .group-count { font-size: 11px; color: var(--text-dim); }
+
+    /* ── DOC ENTRY ── */
+    .doc-entry {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 6px; margin-bottom: 12px; overflow: hidden;
+      transition: border-color 0.2s;
+    }
+
+    .doc-entry:hover { border-color: var(--border-hi); }
+
+    .doc-entry.open { border-color: var(--border-hi); }
+
+    .doc-main {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 20px; align-items: center;
+      padding: 20px 24px; cursor: pointer;
+    }
+
+    .doc-icon {
+      width: 38px; height: 38px; border-radius: 5px;
+      background: var(--bg-raised); border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; flex-shrink: 0;
+    }
+
+    .doc-info {}
+
+    .doc-top {
+      display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+      margin-bottom: 4px;
+    }
+
+    .doc-title {
+      font-family: var(--font-dis); font-size: 15px;
+      font-weight: 700; color: var(--text); letter-spacing: -0.2px;
+    }
+
+    .doc-version {
+      font-size: 10px; color: var(--text-mid);
+      border: 1px solid var(--border); border-radius: 3px;
+      padding: 1px 7px; flex-shrink: 0;
+    }
+
+    .doc-badge {
+      font-size: 10px; padding: 1px 7px;
+      border-radius: 3px; border: 1px solid; flex-shrink: 0;
+    }
+
+    .badge-new { color: var(--accent); border-color: var(--accent-dim); background: rgba(41,224,127,0.07); }
+    .badge-upd { color: var(--amber); border-color: #6b4a18; background: rgba(240,168,67,0.07); }
+
+    .doc-meta-row {
+      display: flex; gap: 16px; flex-wrap: wrap; align-items: center;
+    }
+
+    .doc-chips { display: flex; gap: 5px; }
+
+    .chip {
+      font-size: 10px; color: var(--text-dim);
+      border: 1px solid var(--border); border-radius: 3px; padding: 1px 6px;
+    }
+
+    .doc-date { font-size: 11px; color: var(--text-dim); }
+
+    .doc-actions { display: flex; align-items: center; gap: 8px; }
+
+    .btn-icon {
+      width: 32px; height: 32px; border-radius: 4px;
+      background: transparent; border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; cursor: pointer; color: var(--text-mid);
+      transition: all 0.2s; text-decoration: none;
+    }
+
+    .btn-icon:hover { border-color: var(--accent-dim); color: var(--accent); background: rgba(41,224,127,0.07); }
+
+    .btn-chevron {
+      width: 28px; height: 28px; border-radius: 4px;
+      background: transparent; border: none;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; cursor: pointer; color: var(--text-dim);
+      transition: all 0.2s;
+    }
+
+    .doc-entry.open .btn-chevron { transform: rotate(180deg); color: var(--accent); }
+
+    /* ── DOC EXPANDED ── */
+    .doc-expanded {
+      display: none;
+      border-top: 1px solid var(--border);
+    }
+
+    .doc-entry.open .doc-expanded { display: block; }
+
+    .doc-expanded-inner {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+    }
+
+    @media (max-width: 700px) {
+      .doc-expanded-inner { grid-template-columns: 1fr; }
+    }
+
+    /* Preview pane */
+    .preview-pane {
+      padding: 24px; border-right: 1px solid var(--border);
+    }
+
+    .pane-label {
+      font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase;
+      color: var(--text-dim); margin-bottom: 14px;
+    }
+
+    .schematic-preview {
+      background: var(--bg-raised); border: 1px solid var(--border);
+      border-radius: 4px; aspect-ratio: 4/3;
+      display: flex; align-items: center; justify-content: center;
+      position: relative; overflow: hidden;
+    }
+
+    /* SVG placeholder schematic */
+    .schematic-preview svg {
+      width: 100%; height: 100%;
+      opacity: 0.7;
+    }
+
+    .preview-caption {
+      font-size: 11px; color: var(--text-dim); margin-top: 10px; text-align: center;
+    }
+
+    /* Info pane */
+    .info-pane { padding: 24px; }
+
+    .notes-block {
+      background: var(--bg-raised); border: 1px solid var(--border);
+      border-radius: 4px; padding: 16px;
+      font-size: 12px; color: var(--text-mid);
+      line-height: 1.8; margin-bottom: 20px;
+    }
+
+    .notes-block strong { color: var(--text); font-weight: 500; }
+
+    /* Version history */
+    .version-list { display: grid; gap: 8px; }
+
+    .version-item {
+      display: grid; grid-template-columns: auto 1fr auto;
+      gap: 12px; align-items: start;
+      padding: 10px 12px; border-radius: 4px;
+      background: var(--bg-raised); border: 1px solid var(--border);
+    }
+
+    .version-tag {
+      font-size: 11px; color: var(--accent);
+      font-weight: 500; margin-top: 1px; white-space: nowrap;
+    }
+
+    .version-msg { font-size: 11px; color: var(--text-mid); }
+
+    .version-msg small { display: block; color: var(--text-dim); font-size: 10px; margin-top: 2px; }
+
+    .version-dl {
+      font-size: 11px; color: var(--text-dim);
+      text-decoration: none; padding: 2px 8px;
+      border: 1px solid var(--border); border-radius: 3px;
+      white-space: nowrap; transition: all 0.2s;
+    }
+
+    .version-dl:hover { color: var(--accent); border-color: var(--accent-dim); }
+
+    /* ── EMPTY STATE ── */
+    .empty-state {
+      text-align: center; padding: 60px 24px;
+      color: var(--text-dim); border: 1px dashed var(--border);
+      border-radius: 6px;
+    }
+
+    .empty-icon { font-size: 28px; margin-bottom: 12px; opacity: 0.4; }
+    .empty-text { font-size: 12px; }
+
+    /* ── FOOTER ── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 32px 24px; margin-top: 80px;
+      display: flex; justify-content: space-between;
+      align-items: center; flex-wrap: wrap; gap: 8px;
+      font-size: 11px; color: var(--text-dim);
+      max-width: 1100px; margin-left: auto; margin-right: auto;
+    }
+
+    .footer-sig { color: var(--accent); }
+  </style>
+</head>
+
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-inner">
+    <a href="index.html" class="nav-logo">
+      lab.notes
+      <span>/ EE Engineering</span>
+    </a>
+    <ul class="nav-links">
+      <li><a href="index.html#projekte">Projekte</a></li>
+      <li><a href="docs.html" class="active">Docs</a></li>
+      <li><a href="kb.html">Knowledge Base</a></li>
+    </ul>
+    <div class="nav-status">
+      <div class="status-dot"></div>
+      aktiv
+    </div>
+  </div>
+</nav>
+
+<div class="site-wrap">
+
+  <!-- PAGE HEADER -->
+  <div class="page-header">
+    <div class="page-header-left">
+      <div class="breadcrumb">
+        <a href="index.html">lab.notes</a>
+        <span class="breadcrumb-sep">/</span>
+        <span>Docs</span>
+      </div>
+      <h1 class="page-title">Schaltpläne & Docs</h1>
+      <p class="page-sub">Projektdokumentation · Schaltpläne · BOMs · Simulationsergebnisse</p>
+    </div>
+  </div>
+
+  <!-- FILTER BAR -->
+  <div class="filter-bar">
+    <span class="filter-label">Projekt:</span>
+    <button class="filter-btn active" onclick="filterDocs('all', this)">Alle</button>
+    <button class="filter-btn" onclick="filterDocs('esc', this)">ESC Quadcopter</button>
+    <button class="filter-btn" onclick="filterDocs('rc', this)">RC-Empfänger</button>
+  </div>
+
+  <!-- PROJECT GROUP: ESC -->
+  <div class="project-group" data-project="esc">
+    <div class="group-header">
+      <span class="group-tag">⚡ In Arbeit</span>
+      <span class="group-title">ESC für Quadcopter</span>
+      <div class="group-line"></div>
+      <span class="group-count">4 Dokumente</span>
+    </div>
+
+    <!-- Doc 1 -->
+    <div class="doc-entry" id="doc-1">
+      <div class="doc-main" onclick="toggleDoc('doc-1')">
+        <div class="doc-icon">📐</div>
+        <div class="doc-info">
+          <div class="doc-top">
+            <span class="doc-title">Topologie-Analyse</span>
+            <span class="doc-version">v1.0</span>
+            <span class="doc-badge badge-new">NEU</span>
+          </div>
+          <div class="doc-meta-row">
+            <div class="doc-chips">
+              <span class="chip">Konzept</span>
+              <span class="chip">H-Brücke</span>
+              <span class="chip">MOSFET</span>
+            </div>
+            <span class="doc-date">08 Mär 2026</span>
+          </div>
+        </div>
+        <div class="doc-actions">
+          <a href="#" class="btn-icon" title="Download" onclick="event.stopPropagation()">↓</a>
+          <button class="btn-chevron">▾</button>
+        </div>
+      </div>
+
+      <div class="doc-expanded">
+        <div class="doc-expanded-inner">
+          <div class="preview-pane">
+            <div class="pane-label">Vorschau</div>
+            <div class="schematic-preview">
+              <!-- Simple SVG schematic placeholder -->
+              <svg viewBox="0 0 300 220" xmlns="http://www.w3.org/2000/svg">
+                <rect width="300" height="220" fill="#0d1114"/>
+                <!-- Supply rail -->
+                <line x1="20" y1="20" x2="280" y2="20" stroke="#29e07f" stroke-width="1.5"/>
+                <text x="285" y="24" fill="#1a6e43" font-size="9" font-family="monospace">V+</text>
+                <!-- GND rail -->
+                <line x1="20" y1="200" x2="280" y2="200" stroke="#3a5548" stroke-width="1.5"/>
+                <text x="285" y="204" fill="#3a5548" font-size="9" font-family="monospace">GND</text>
+
+                <!-- Phase A: High-side MOSFET -->
+                <line x1="60" y1="20" x2="60" y2="55" stroke="#7a9e8e" stroke-width="1"/>
+                <rect x="45" y="55" width="30" height="22" fill="none" stroke="#29e07f" stroke-width="1.2" rx="2"/>
+                <text x="52" y="70" fill="#29e07f" font-size="8" font-family="monospace">Q1</text>
+                <line x1="60" y1="77" x2="60" y2="105" stroke="#7a9e8e" stroke-width="1"/>
+                <!-- Motor output A -->
+                <line x1="60" y1="105" x2="90" y2="105" stroke="#f0a843" stroke-width="1.5"/>
+                <line x1="60" y1="115" x2="60" y2="145" stroke="#7a9e8e" stroke-width="1"/>
+                <!-- Low-side MOSFET A -->
+                <rect x="45" y="145" width="30" height="22" fill="none" stroke="#29e07f" stroke-width="1.2" rx="2"/>
+                <text x="52" y="160" fill="#29e07f" font-size="8" font-family="monospace">Q2</text>
+                <line x1="60" y1="167" x2="60" y2="200" stroke="#7a9e8e" stroke-width="1"/>
+
+                <!-- Phase B -->
+                <line x1="150" y1="20" x2="150" y2="55" stroke="#7a9e8e" stroke-width="1"/>
+                <rect x="135" y="55" width="30" height="22" fill="none" stroke="#29e07f" stroke-width="1.2" rx="2"/>
+                <text x="142" y="70" fill="#29e07f" font-size="8" font-family="monospace">Q3</text>
+                <line x1="150" y1="77" x2="150" y2="105" stroke="#7a9e8e" stroke-width="1"/>
+                <line x1="150" y1="105" x2="90" y2="105" stroke="#f0a843" stroke-width="1.5"/>
+                <line x1="150" y1="115" x2="150" y2="145" stroke="#7a9e8e" stroke-width="1"/>
+                <rect x="135" y="145" width="30" height="22" fill="none" stroke="#29e07f" stroke-width="1.2" rx="2"/>
+                <text x="142" y="160" fill="#29e07f" font-size="8" font-family="monospace">Q4</text>
+                <line x1="150" y1="167" x2="150" y2="200" stroke="#7a9e8e" stroke-width="1"/>
+
+                <!-- Phase C -->
+                <line x1="240" y1="20" x2="240" y2="55" stroke="#7a9e8e" stroke-width="1"/>
+                <rect x="225" y="55" width="30" height="22" fill="none" stroke="#29e07f" stroke-width="1.2" rx="2"/>
+                <text x="232" y="70" fill="#29e07f" font-size="8" font-family="monospace">Q5</text>
+                <line x1="240" y1="77" x2="240" y2="105" stroke="#7a9e8e" stroke-width="1"/>
+                <line x1="240" y1="105" x2="90" y2="105" stroke="#f0a843" stroke-width="0.8" stroke-dasharray="3,2"/>
+                <line x1="240" y1="115" x2="240" y2="145" stroke="#7a9e8e" stroke-width="1"/>
+                <rect x="225" y="145" width="30" height="22" fill="none" stroke="#29e07f" stroke-width="1.2" rx="2"/>
+                <text x="232" y="160" fill="#29e07f" font-size="8" font-family="monospace">Q6</text>
+                <line x1="240" y1="167" x2="240" y2="200" stroke="#7a9e8e" stroke-width="1"/>
+
+                <!-- Motor symbol -->
+                <circle cx="90" cy="115" r="12" fill="none" stroke="#f0a843" stroke-width="1.2"/>
+                <text x="85" y="119" fill="#f0a843" font-size="9" font-family="monospace">M</text>
+
+                <!-- Labels -->
+                <text x="20" y="115" fill="#3a5548" font-size="8" font-family="monospace">Phase A</text>
+                <text x="108" y="115" fill="#3a5548" font-size="8" font-family="monospace">B</text>
+                <text x="195" y="115" fill="#3a5548" font-size="8" font-family="monospace">Phase C</text>
+              </svg>
+            </div>
+            <p class="preview-caption">3-phasige H-Brücke · 6× MOSFET</p>
+          </div>
+
+          <div class="info-pane">
+            <div class="pane-label">Notizen</div>
+            <div class="notes-block">
+              <strong>Ziel:</strong> Vergleich von 2-Level vs. 3-Level Topologie für BLDC-Ansteuerung.<br/><br/>
+              <strong>Entscheidung:</strong> Standard 6-MOSFET 2-Level H-Brücke — ausreichend für &lt;30V / 20A.<br/><br/>
+              <strong>Offen:</strong> Bootstrap-Kondensator-Dimensionierung für High-Side Gate-Driver. Freewheel-Diode vs. Body-Diode Eignung prüfen.
+            </div>
+
+            <div class="pane-label">Versionshistorie</div>
+            <div class="version-list">
+              <div class="version-item">
+                <span class="version-tag">v1.0</span>
+                <div class="version-msg">
+                  Initiale Topologie-Analyse
+                  <small>08 Mär 2026</small>
+                </div>
+                <a href="#" class="version-dl">↓ PDF</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Doc 2 -->
+    <div class="doc-entry" id="doc-2">
+      <div class="doc-main" onclick="toggleDoc('doc-2')">
+        <div class="doc-icon">⚡</div>
+        <div class="doc-info">
+          <div class="doc-top">
+            <span class="doc-title">Power Stage Schaltplan</span>
+            <span class="doc-version">v0.2</span>
+            <span class="doc-badge badge-upd">UPDATE</span>
+          </div>
+          <div class="doc-meta-row">
+            <div class="doc-chips">
+              <span class="chip">Schaltplan</span>
+              <span class="chip">Gate-Driver</span>
+              <span class="chip">Bootstrap</span>
+            </div>
+            <span class="doc-date">05 Mär 2026</span>
+          </div>
+        </div>
+        <div class="doc-actions">
+          <a href="#" class="btn-icon" title="Download" onclick="event.stopPropagation()">↓</a>
+          <button class="btn-chevron">▾</button>
+        </div>
+      </div>
+
+      <div class="doc-expanded">
+        <div class="doc-expanded-inner">
+          <div class="preview-pane">
+            <div class="pane-label">Vorschau</div>
+            <div class="schematic-preview">
+              <svg viewBox="0 0 300 220" xmlns="http://www.w3.org/2000/svg">
+                <rect width="300" height="220" fill="#0d1114"/>
+                <!-- Gate driver IC -->
+                <rect x="30" y="70" width="70" height="80" fill="none" stroke="#29e07f" stroke-width="1.2" rx="3"/>
+                <text x="43" y="108" fill="#29e07f" font-size="9" font-family="monospace">IR2110</text>
+                <text x="45" y="120" fill="#1a6e43" font-size="7" font-family="monospace">Gate Driver</text>
+                <!-- IN pins -->
+                <line x1="0" y1="88" x2="30" y2="88" stroke="#7a9e8e" stroke-width="1"/>
+                <text x="2" y="85" fill="#3a5548" font-size="7" font-family="monospace">HIN</text>
+                <line x1="0" y1="102" x2="30" y2="102" stroke="#7a9e8e" stroke-width="1"/>
+                <text x="2" y="99" fill="#3a5548" font-size="7" font-family="monospace">LIN</text>
+                <!-- HO/LO outputs -->
+                <line x1="100" y1="88" x2="135" y2="88" stroke="#7a9e8e" stroke-width="1"/>
+                <text x="102" y="85" fill="#3a5548" font-size="7" font-family="monospace">HO</text>
+                <line x1="100" y1="112" x2="135" y2="112" stroke="#7a9e8e" stroke-width="1"/>
+                <text x="102" y="109" fill="#3a5548" font-size="7" font-family="monospace">LO</text>
+                <!-- High-side MOSFET -->
+                <rect x="135" y="70" width="32" height="26" fill="none" stroke="#f0a843" stroke-width="1.2" rx="2"/>
+                <text x="141" y="87" fill="#f0a843" font-size="9" font-family="monospace">Q_H</text>
+                <!-- Low-side MOSFET -->
+                <rect x="135" y="104" width="32" height="26" fill="none" stroke="#f0a843" stroke-width="1.2" rx="2"/>
+                <text x="141" y="121" fill="#f0a843" font-size="9" font-family="monospace">Q_L</text>
+                <!-- Bootstrap cap -->
+                <line x1="180" y1="60" x2="210" y2="60" stroke="#7a9e8e" stroke-width="1"/>
+                <rect x="210" y="53" width="6" height="14" fill="#3a5548"/>
+                <rect x="218" y="53" width="6" height="14" fill="#3a5548"/>
+                <text x="207" y="50" fill="#3a5548" font-size="7" font-family="monospace">Cboot</text>
+                <line x1="224" y1="60" x2="250" y2="60" stroke="#7a9e8e" stroke-width="1"/>
+                <!-- VCC -->
+                <line x1="65" y1="70" x2="65" y2="40" stroke="#7a9e8e" stroke-width="1"/>
+                <line x1="50" y1="40" x2="80" y2="40" stroke="#29e07f" stroke-width="1.5"/>
+                <text x="83" y="44" fill="#29e07f" font-size="8" font-family="monospace">15V</text>
+                <!-- GND -->
+                <line x1="65" y1="150" x2="65" y2="180" stroke="#7a9e8e" stroke-width="1"/>
+                <line x1="50" y1="180" x2="80" y2="180" stroke="#3a5548" stroke-width="1.5"/>
+                <line x1="55" y1="185" x2="75" y2="185" stroke="#3a5548" stroke-width="1"/>
+                <line x1="60" y1="190" x2="70" y2="190" stroke="#3a5548" stroke-width="1"/>
+                <!-- Output to motor -->
+                <line x1="167" y1="96" x2="280" y2="96" stroke="#f0a843" stroke-width="1.5"/>
+                <text x="255" y="92" fill="#f0a843" font-size="8" font-family="monospace">Phase</text>
+                <!-- Dead-time annotation -->
+                <line x1="135" y1="100" x2="100" y2="130" stroke="#3a5548" stroke-width="0.8" stroke-dasharray="2,2"/>
+                <text x="10" y="148" fill="#3a5548" font-size="7" font-family="monospace">Dead-time: ~75ns</text>
+              </svg>
+            </div>
+            <p class="preview-caption">Gate-Driver Schaltung · IR2110 mit Bootstrap</p>
+          </div>
+
+          <div class="info-pane">
+            <div class="pane-label">Notizen</div>
+            <div class="notes-block">
+              <strong>Änderung v0.2:</strong> Bootstrap-Kondensator von 100nF auf 220nF erhöht nach Simulation (Ladezeit war zu knapp bei 20kHz).<br/><br/>
+              <strong>Dead-Time:</strong> ~75ns über RC-Netzwerk am IR2110 gesetzt. Zu prüfen: reicht das bei IRFZ44N Schaltzeiten?<br/><br/>
+              <strong>TODO:</strong> Overcurrent-Schutz über Shunt noch nicht eingezeichnet.
+            </div>
+
+            <div class="pane-label">Versionshistorie</div>
+            <div class="version-list">
+              <div class="version-item">
+                <span class="version-tag">v0.2</span>
+                <div class="version-msg">
+                  Bootstrap-C erhöht, Dead-Time fix
+                  <small>05 Mär 2026</small>
+                </div>
+                <a href="#" class="version-dl">↓ PDF</a>
+              </div>
+              <div class="version-item">
+                <span class="version-tag">v0.1</span>
+                <div class="version-msg">
+                  Erster Entwurf Power Stage
+                  <small>01 Mär 2026</small>
+                </div>
+                <a href="#" class="version-dl">↓ PDF</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Doc 3 -->
+    <div class="doc-entry" id="doc-3">
+      <div class="doc-main" onclick="toggleDoc('doc-3')">
+        <div class="doc-icon">🔌</div>
+        <div class="doc-info">
+          <div class="doc-top">
+            <span class="doc-title">Bill of Materials (BOM)</span>
+            <span class="doc-version">v1.1</span>
+            <span class="doc-badge badge-upd">UPDATE</span>
+          </div>
+          <div class="doc-meta-row">
+            <div class="doc-chips">
+              <span class="chip">BOM</span>
+              <span class="chip">Bauteile</span>
+              <span class="chip">Datasheets</span>
+            </div>
+            <span class="doc-date">02 Mär 2026</span>
+          </div>
+        </div>
+        <div class="doc-actions">
+          <a href="#" class="btn-icon" title="Download" onclick="event.stopPropagation()">↓</a>
+          <button class="btn-chevron">▾</button>
+        </div>
+      </div>
+
+      <div class="doc-expanded">
+        <div class="doc-expanded-inner">
+          <div class="preview-pane">
+            <div class="pane-label">Vorschau</div>
+            <div class="schematic-preview" style="aspect-ratio: unset; padding: 16px;">
+              <table style="width:100%; font-size:11px; border-collapse:collapse; font-family:var(--font-mono);">
+                <thead>
+                  <tr style="border-bottom:1px solid var(--border);">
+                    <th style="text-align:left; padding:6px 8px; color:var(--text-dim); font-weight:400; letter-spacing:0.08em;">BAUTEIL</th>
+                    <th style="text-align:left; padding:6px 8px; color:var(--text-dim); font-weight:400;">WERT / TYP</th>
+                    <th style="text-align:right; padding:6px 8px; color:var(--text-dim); font-weight:400;">Qty</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr style="border-bottom:1px solid #0d1114;">
+                    <td style="padding:6px 8px; color:var(--accent);">MOSFET</td>
+                    <td style="padding:6px 8px; color:var(--text-mid);">IRFZ44N</td>
+                    <td style="padding:6px 8px; color:var(--text); text-align:right;">6×</td>
+                  </tr>
+                  <tr style="border-bottom:1px solid #0d1114;">
+                    <td style="padding:6px 8px; color:var(--accent);">Gate Driver</td>
+                    <td style="padding:6px 8px; color:var(--text-mid);">IR2110</td>
+                    <td style="padding:6px 8px; color:var(--text); text-align:right;">3×</td>
+                  </tr>
+                  <tr style="border-bottom:1px solid #0d1114;">
+                    <td style="padding:6px 8px; color:var(--accent);">Bootstrap C</td>
+                    <td style="padding:6px 8px; color:var(--text-mid);">220nF / 25V</td>
+                    <td style="padding:6px 8px; color:var(--text); text-align:right;">3×</td>
+                  </tr>
+                  <tr style="border-bottom:1px solid #0d1114;">
+                    <td style="padding:6px 8px; color:var(--accent);">Bulk Cap</td>
+                    <td style="padding:6px 8px; color:var(--text-mid);">470µF / 35V</td>
+                    <td style="padding:6px 8px; color:var(--text); text-align:right;">2×</td>
+                  </tr>
+                  <tr>
+                    <td style="padding:6px 8px; color:var(--accent);">MCU</td>
+                    <td style="padding:6px 8px; color:var(--text-mid);">STM32F401</td>
+                    <td style="padding:6px 8px; color:var(--text); text-align:right;">1×</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <p class="preview-caption">Auszug · vollständige Liste im Download</p>
+          </div>
+
+          <div class="info-pane">
+            <div class="pane-label">Notizen</div>
+            <div class="notes-block">
+              <strong>Änderung v1.1:</strong> STM32F103 durch F401 ersetzt — mehr Timer-Kanäle für 6× PWM nötig.<br/><br/>
+              <strong>Noch offen:</strong> Shunt-Widerstand für Strommessung (Wert hängt von max. Strom ab). Current-Sense-Amplifier evaluieren.
+            </div>
+
+            <div class="pane-label">Versionshistorie</div>
+            <div class="version-list">
+              <div class="version-item">
+                <span class="version-tag">v1.1</span>
+                <div class="version-msg">MCU-Tausch F103→F401<small>02 Mär 2026</small></div>
+                <a href="#" class="version-dl">↓ CSV</a>
+              </div>
+              <div class="version-item">
+                <span class="version-tag">v1.0</span>
+                <div class="version-msg">Initiale BOM<small>26 Feb 2026</small></div>
+                <a href="#" class="version-dl">↓ CSV</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Doc 4 -->
+    <div class="doc-entry" id="doc-4">
+      <div class="doc-main" onclick="toggleDoc('doc-4')">
+        <div class="doc-icon">📊</div>
+        <div class="doc-info">
+          <div class="doc-top">
+            <span class="doc-title">LTspice Simulation — Schalttransienten</span>
+            <span class="doc-version">v1.0</span>
+            <span class="doc-badge badge-new">NEU</span>
+          </div>
+          <div class="doc-meta-row">
+            <div class="doc-chips">
+              <span class="chip">LTspice</span>
+              <span class="chip">Simulation</span>
+              <span class="chip">20kHz PWM</span>
+            </div>
+            <span class="doc-date">28 Feb 2026</span>
+          </div>
+        </div>
+        <div class="doc-actions">
+          <a href="#" class="btn-icon" title="Download" onclick="event.stopPropagation()">↓</a>
+          <button class="btn-chevron">▾</button>
+        </div>
+      </div>
+
+      <div class="doc-expanded">
+        <div class="doc-expanded-inner">
+          <div class="preview-pane">
+            <div class="pane-label">Vorschau</div>
+            <div class="schematic-preview">
+              <svg viewBox="0 0 300 220" xmlns="http://www.w3.org/2000/svg">
+                <rect width="300" height="220" fill="#0d1114"/>
+                <!-- Axes -->
+                <line x1="30" y1="20" x2="30" y2="190" stroke="#1c2830" stroke-width="1"/>
+                <line x1="30" y1="190" x2="285" y2="190" stroke="#1c2830" stroke-width="1"/>
+                <!-- Y-axis labels -->
+                <text x="2" y="30" fill="#3a5548" font-size="7" font-family="monospace">24V</text>
+                <text x="5" y="110" fill="#3a5548" font-size="7" font-family="monospace">12V</text>
+                <text x="5" y="190" fill="#3a5548" font-size="7" font-family="monospace">0V</text>
+                <!-- Grid -->
+                <line x1="30" y1="110" x2="285" y2="110" stroke="#1c2830" stroke-width="0.5" stroke-dasharray="3,3"/>
+                <!-- PWM waveform (gate) -->
+                <polyline points="30,185 55,185 55,25 80,25 80,185 105,185 105,25 130,25 130,185 155,185 155,25 180,25 180,185 205,185 205,25 230,25 230,185 255,185 255,25 280,25 280,185"
+                  fill="none" stroke="#1a6e43" stroke-width="1"/>
+                <!-- Drain voltage (ringing) -->
+                <polyline points="30,185 55,185 57,100 60,20 63,28 66,23 69,26 72,24 75,25 80,25 82,130 85,185 87,165 90,175 95,180 100,182 105,182 107,100 110,20 113,28 116,23 119,26 122,24 125,25 130,25 132,130 135,185 140,181 145,183 150,184 155,184 157,100 160,20 163,28 166,23 169,26 172,24 175,25 180,25 182,130 185,185 190,183 195,184 200,184 205,184 207,100 210,20 213,28 216,23 219,26 222,24 225,25 230,25 232,130 235,185 240,183 245,184 250,184 255,184 257,100 260,20 263,28 265,23 268,26 271,24 274,25 280,25"
+                  fill="none" stroke="#f0a843" stroke-width="1.2"/>
+                <!-- Current -->
+                <polyline points="30,188 55,188 58,175 65,160 75,158 80,158 82,170 85,188 90,186 95,187 105,187 107,175 115,160 125,158 130,158 132,170 135,188 140,186 145,187 155,187 157,175 165,160 175,158 180,158 182,170 185,188 190,186 195,187 205,187 207,175 215,160 225,158 230,158 232,170 235,188 240,186 245,187 255,187 257,175 265,160 275,158 280,158"
+                  fill="none" stroke="#29e07f" stroke-width="1"/>
+                <!-- Legend -->
+                <line x1="35" y1="208" x2="50" y2="208" stroke="#1a6e43" stroke-width="1.5"/>
+                <text x="53" y="211" fill="#3a5548" font-size="7" font-family="monospace">V_Gate</text>
+                <line x1="100" y1="208" x2="115" y2="208" stroke="#f0a843" stroke-width="1.5"/>
+                <text x="118" y="211" fill="#3a5548" font-size="7" font-family="monospace">V_DS</text>
+                <line x1="155" y1="208" x2="170" y2="208" stroke="#29e07f" stroke-width="1.5"/>
+                <text x="173" y="211" fill="#3a5548" font-size="7" font-family="monospace">I_D</text>
+              </svg>
+            </div>
+            <p class="preview-caption">Schalt-Transienten · IRFZ44N bei 20kHz</p>
+          </div>
+
+          <div class="info-pane">
+            <div class="pane-label">Notizen</div>
+            <div class="notes-block">
+              <strong>Ergebnis:</strong> Ringing auf V_DS deutlich sichtbar — Gate-Widerstand von 10Ω auf 22Ω erhöhen um Überschwingen zu dämpfen.<br/><br/>
+              <strong>Verlustleistung:</strong> ~1.4W Schaltverluste pro MOSFET bei 24V / 10A. Kühlkörper nötig ab ~5A Dauerstrom.<br/><br/>
+              <strong>Nächste Sim:</strong> Thermisches Modell mit Kühlkörper-RthJA.
+            </div>
+
+            <div class="pane-label">Versionshistorie</div>
+            <div class="version-list">
+              <div class="version-item">
+                <span class="version-tag">v1.0</span>
+                <div class="version-msg">Schalttransient-Analyse<small>28 Feb 2026</small></div>
+                <a href="#" class="version-dl">↓ ASC</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- end project group ESC -->
+
+  <!-- PROJECT GROUP: RC -->
+  <div class="project-group" data-project="rc" style="display:none;">
+    <div class="group-header">
+      <span class="group-tag" style="color:var(--text-mid);background:transparent;border-color:var(--border);">○ Geplant</span>
+      <span class="group-title">RC-Empfänger</span>
+      <div class="group-line"></div>
+      <span class="group-count">0 Dokumente</span>
+    </div>
+    <div class="empty-state">
+      <div class="empty-icon">📂</div>
+      <div class="empty-text">Noch keine Docs für dieses Projekt</div>
+    </div>
+  </div>
+
+</div><!-- end site-wrap -->
+
+<footer>
+  <span>lab.notes — Persönliches Engineering-Journal</span>
+  <span class="footer-sig">built by hand · 2026</span>
+</footer>
+
+<script>
+  function toggleDoc(id) {
+    const entry = document.getElementById(id);
+    entry.classList.toggle('open');
+  }
+
+  function filterDocs(project, btn) {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+
+    const groups = document.querySelectorAll('.project-group');
+    groups.forEach(g => {
+      if (project === 'all') {
+        g.style.display = '';
+      } else {
+        g.style.display = g.dataset.project === project ? '' : 'none';
+      }
+    });
+  }
+</script>
+</body>
+</html>
