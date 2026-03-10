@@ -172,6 +172,8 @@
     .md-body hr{border:none;border-top:1px solid var(--border);margin:20px 0}
     .md-body img{max-width:100%;border-radius:6px;border:1px solid var(--border)}
     .md-body svg{max-width:100%;height:auto}
+    .wikilink{color:var(--accent);text-decoration:underline;cursor:pointer;font-style:italic}
+    .wikilink:hover{opacity:.75}
     .svg-block{margin:0 0 14px;padding:12px;background:var(--bg-raised);border:1px solid var(--border);border-radius:6px;overflow-x:auto}
     .svg-block svg{max-width:100%;height:auto;display:block;margin:0 auto}
     /* KaTeX override */
@@ -453,7 +455,7 @@ function renderMarkdown(raw) {
       return `<img src="${GH_RAW}${encodeURIComponent(clean)}" alt="${clean}" style="max-width:100%;border-radius:6px;border:1px solid var(--border)"/>`;
     })
     .replace(/\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g, (_, target, alias) =>
-      `<span style="color:var(--accent);text-decoration:underline;cursor:default" title="Wikilink: ${target}">${alias||target}</span>`
+      `<span class="wikilink" onclick="openWikilink('${target.replace(/'/g,"\\'")}')">[[${alias||target}]]</span>`
     );
 
   marked.setOptions({ breaks: true, gfm: true });
@@ -491,8 +493,42 @@ function highlightCode(el) {
 }
 
 // ══════════════════════════════════════
-// PDF EXPORT
+// WIKILINK NAVIGATION
 // ══════════════════════════════════════
+async function openWikilink(target) {
+  // Search in currently loaded notes first
+  const titleLower = target.toLowerCase();
+  let found = notes.find(n => n.title.toLowerCase() === titleLower);
+  if (!found) {
+    // Load all notes across all categories
+    await loadAllNotes();
+    for (const cat of Object.values(allNotesCache)) {
+      found = cat.find(n => n.title.toLowerCase() === titleLower
+        || n.path.toLowerCase().includes(target.toLowerCase().replace(/\s+/g,'-')));
+      if (found) break;
+    }
+  }
+  if (found) {
+    viewNote(found.path);
+  } else {
+    // Show subtle toast instead of alert
+    showToast(`"${target}" nicht gefunden`);
+  }
+}
+
+function showToast(msg) {
+  let t = document.getElementById('lab-toast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'lab-toast';
+    t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--bg-card);border:1px solid var(--border);color:var(--text-dim);padding:8px 18px;border-radius:20px;font-size:12px;z-index:9999;pointer-events:none;opacity:0;transition:opacity .2s';
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.style.opacity = '1';
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.style.opacity = '0', 2500);
+}
 function exportPDF() {
   if (!viewingNote) return;
   const title = viewingNote.title;
