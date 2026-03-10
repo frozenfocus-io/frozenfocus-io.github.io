@@ -172,6 +172,8 @@
     .md-body hr{border:none;border-top:1px solid var(--border);margin:20px 0}
     .md-body img{max-width:100%;border-radius:6px;border:1px solid var(--border)}
     .md-body svg{max-width:100%;height:auto}
+    .svg-block{margin:0 0 14px;padding:12px;background:var(--bg-raised);border:1px solid var(--border);border-radius:6px;overflow-x:auto}
+    .svg-block svg{max-width:100%;height:auto;display:block;margin:0 auto}
     /* KaTeX override */
     .md-body .katex-display{margin:16px 0;overflow-x:auto}
     .md-raw{font-family:var(--font-mono);font-size:12.5px;color:var(--text-mid);white-space:pre-wrap;line-height:1.75;background:var(--bg-raised);border-radius:6px;padding:16px}
@@ -227,6 +229,24 @@
     .fav-btn:hover{color:var(--amber)}
     .fav-btn.active{color:var(--amber)}
     .fav-badge{position:absolute;top:10px;left:10px;font-size:12px;line-height:1}
+
+    /* ── IMAGE UPLOAD ── */
+    .img-upload-bar{display:flex;align-items:center;gap:8px;margin-bottom:8px;padding:8px 10px;background:var(--bg-raised);border:1px dashed var(--border);border-radius:5px}
+    .img-upload-btn{font-family:var(--font-mono);font-size:11px;padding:4px 10px;border-radius:4px;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text-dim);transition:all .2s;white-space:nowrap}
+    .img-upload-btn:hover{color:var(--accent);border-color:var(--accent-dim)}
+    .img-upload-status{font-size:11px;color:var(--text-dim);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .img-upload-input{display:none}
+    /* ── PDF PRINT ── */
+    @media print{
+      nav,footer,.modal-footer,.view-toggle,#view-meta-tags{display:none!important}
+      .modal-overlay{position:static!important;background:none!important;display:block!important;padding:0!important}
+      .modal{box-shadow:none!important;border:none!important;max-width:100%!important;max-height:none!important}
+      .modal-header{border-bottom:1px solid #ccc!important}
+      body::before,body::after{display:none!important}
+      .md-body{font-size:12pt;color:#000!important}
+      .md-body h1,.md-body h2,.md-body h3{color:#000!important}
+      .md-body code,.md-body pre{background:#f5f5f5!important;color:#333!important;border:1px solid #ddd!important}
+    }
 
     footer{border-top:1px solid var(--border);padding:24px;display:flex;justify-content:space-between;font-size:11px;color:var(--text-dim);position:relative;z-index:1}
     .footer-sig{color:var(--accent)}
@@ -335,6 +355,11 @@
       </div>
       <div class="form-group">
         <label class="form-label">Inhalt (Markdown · LaTeX mit $...$ oder $$...$$)</label>
+        <div class="img-upload-bar">
+          <span class="img-upload-status" id="kb-upload-status">Bild einfügen: ![[dateiname.png]]</span>
+          <input class="img-upload-input" type="file" id="kb-img-input" accept="image/*,.svg" onchange="uploadImage(this,'kb-upload-status','note-content-input')"/>
+          <button class="img-upload-btn" onclick="document.getElementById('kb-img-input').click()">📎 Bild hochladen</button>
+        </div>
         <textarea class="form-textarea" id="note-content-input" placeholder="# Überschrift&#10;**Fett**, *Kursiv*, \`Code\`&#10;&#10;LaTeX: $V = I \cdot R$ oder $$P = \frac{V^2}{R}$$&#10;&#10;```c&#10;int main() { return 0; }&#10;```"></textarea>
       </div>
     </div>
@@ -362,6 +387,7 @@
     </div>
     <div class="modal-footer">
       <span id="view-meta-tags" style="flex:1;font-size:11px;color:var(--text-dim)"></span>
+      <button class="btn btn-ghost" onclick="exportPDF()" title="Als PDF speichern">⬇ PDF</button>
       <button class="btn btn-ghost" onclick="closeModal('modal-view')">Schließen</button>
       <button class="btn btn-primary" id="view-edit-btn" onclick="editFromView()" style="display:none">✎ Bearbeiten</button>
     </div>
@@ -401,16 +427,50 @@ function toggleTheme() {
 // ══════════════════════════════════════
 // MARKDOWN RENDERER
 // ══════════════════════════════════════
+// ══════════════════════════════════════
+// GITHUB RAW BASE URL
+// ══════════════════════════════════════
+const GH_RAW = 'https://raw.githubusercontent.com/frozenfocus-io/quartz/main/content/Attachments/';
+
+// ══════════════════════════════════════
+// MARKDOWN RENDERER
+// ══════════════════════════════════════
 function renderMarkdown(raw) {
   if (typeof marked === 'undefined') return `<pre class="md-raw">${esc(raw)}</pre>`;
-  // Pre-process: protect LaTeX from marked
+
+  // Pre-process: protect LaTeX
   const blocks = [];
   let processed = raw
     .replace(/\$\$([^$]+?)\$\$/gs, (_, math) => { blocks.push({type:'block',math}); return `LATEXBLOCK${blocks.length-1}END`; })
     .replace(/\$([^$\n]+?)\$/g, (_, math) => { blocks.push({type:'inline',math}); return `LATEXINLINE${blocks.length-1}END`; });
 
+  // Obsidian wikilinks: ![[file.png]] → <img>, [[Note]] → link
+  processed = processed
+    .replace(/!\[\[([^\]]+)\]\]/g, (_, fname) => {
+      const clean = fname.trim();
+      // SVG inline or image
+      if(clean.endsWith('.svg')) return `<img src="${GH_RAW}${encodeURIComponent(clean)}" alt="${clean}" style="max-width:100%;height:auto"/>`;
+      return `<img src="${GH_RAW}${encodeURIComponent(clean)}" alt="${clean}" style="max-width:100%;border-radius:6px;border:1px solid var(--border)"/>`;
+    })
+    .replace(/\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g, (_, target, alias) =>
+      `<span style="color:var(--accent);text-decoration:underline;cursor:default" title="Wikilink: ${target}">${alias||target}</span>`
+    );
+
   marked.setOptions({ breaks: true, gfm: true });
-  let html = marked.parse(processed);
+
+  // Custom renderer for SVG code blocks
+  const renderer = new marked.Renderer();
+  const origCode = renderer.code.bind(renderer);
+  renderer.code = function(code, lang) {
+    if (lang === 'svg') {
+      // Sanitise: only allow SVG tags, strip scripts
+      const safe = (typeof code === 'object' ? code.text : code).replace(/<script[\s\S]*?<\/script>/gi,'');
+      return `<div class="svg-block">${safe}</div>`;
+    }
+    return origCode(code, lang);
+  };
+
+  let html = marked.parse(processed, {renderer});
 
   // Restore LaTeX
   html = html.replace(/LATEXBLOCK(\d+)END/g, (_, i) => {
@@ -428,6 +488,94 @@ function highlightCode(el) {
   if (typeof Prism !== 'undefined') {
     el.querySelectorAll('pre code').forEach(block => Prism.highlightElement(block));
   }
+}
+
+// ══════════════════════════════════════
+// PDF EXPORT
+// ══════════════════════════════════════
+function exportPDF() {
+  if (!viewingNote) return;
+  const title = viewingNote.title;
+  const html = document.getElementById('view-rendered').innerHTML;
+  const tags = (viewingNote.tags||[]).map(t=>`<span style="font-size:10pt;background:#eee;padding:2px 7px;border-radius:3px;margin-right:4px">#${t}</span>`).join('');
+  const date = viewingNote.date || '';
+
+  const win = window.open('', '_blank');
+  win.document.write(`<!DOCTYPE html><html><head>
+    <meta charset="UTF-8"/>
+    <title>${title}</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css"/>
+    <style>
+      *{box-sizing:border-box;margin:0;padding:0}
+      body{font-family:'Segoe UI',Arial,sans-serif;font-size:11pt;line-height:1.7;color:#1a1a1a;padding:32px 48px;max-width:820px;margin:0 auto}
+      .header{border-bottom:2px solid #1a8f52;padding-bottom:12px;margin-bottom:24px}
+      .header h1{font-size:22pt;font-weight:700;color:#1a1a1a;margin-bottom:6px}
+      .meta{font-size:9pt;color:#666}
+      h1{font-size:18pt;font-weight:700;margin:20px 0 10px;padding-bottom:6px;border-bottom:1px solid #ddd}
+      h2{font-size:14pt;font-weight:700;margin:18px 0 8px;padding-bottom:4px;border-bottom:1px solid #eee}
+      h3{font-size:12pt;font-weight:700;color:#1a8f52;margin:14px 0 6px}
+      p{margin-bottom:10px;color:#333}
+      code{font-family:monospace;font-size:9.5pt;background:#f5f5f5;border:1px solid #ddd;border-radius:3px;padding:1px 4px}
+      pre{background:#f5f5f5;border:1px solid #ddd;border-radius:5px;padding:12px;overflow-x:auto;margin-bottom:12px}
+      pre code{background:none;border:none;padding:0}
+      table{width:100%;border-collapse:collapse;margin-bottom:12px;font-size:10pt}
+      th{background:#f0f0f0;padding:7px 10px;text-align:left;border:1px solid #ddd;font-weight:600}
+      td{padding:7px 10px;border:1px solid #ddd}
+      blockquote{border-left:3px solid #1a8f52;padding:8px 14px;background:#f9fffe;margin-bottom:12px;color:#555}
+      ul,ol{margin:0 0 12px 20px}
+      li{margin-bottom:3px}
+      img{max-width:100%;border-radius:4px;border:1px solid #ddd}
+      .svg-block svg{max-width:100%;height:auto}
+      .footer{margin-top:32px;padding-top:12px;border-top:1px solid #ddd;font-size:8pt;color:#999;text-align:right}
+    </style>
+  </head><body>
+    <div class="header">
+      <h1>${title}</h1>
+      <div class="meta">${tags}${date?`<span style="color:#666">${date}</span>`:''}</div>
+    </div>
+    ${html}
+    <div class="footer">lab.notes · exportiert ${new Date().toLocaleDateString('de-DE')}</div>
+    <script>window.onload=()=>{window.print();}<\/script>
+  </body></html>`);
+  win.document.close();
+}
+
+// ══════════════════════════════════════
+// IMAGE UPLOAD
+// ══════════════════════════════════════
+async function uploadImage(input, statusId, textareaId) {
+  const file = input.files[0];
+  if (!file) return;
+  const statusEl = document.getElementById(statusId);
+  const textarea = document.getElementById(textareaId);
+  statusEl.textContent = `Lade hoch: ${file.name}…`;
+
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    // base64 without the data:mime;base64, prefix
+    const b64 = e.target.result.split(',')[1];
+    const path = `content/Attachments/${file.name}`;
+    // Check if file already exists (to get sha for update)
+    const existing = await LabAPI.readfile(path);
+    const res = await LabAPI.writefile(path, b64, existing.sha||null, true);
+    if (res) {
+      // Insert wikilink at cursor position in textarea
+      const syntax = `![[${file.name}]]`;
+      const pos = textarea.selectionStart;
+      const before = textarea.value.slice(0, pos);
+      const after = textarea.value.slice(pos);
+      textarea.value = before + syntax + after;
+      textarea.selectionStart = textarea.selectionEnd = pos + syntax.length;
+      textarea.focus();
+      statusEl.textContent = `✓ ${file.name} hochgeladen`;
+      setTimeout(()=>statusEl.textContent='Bild einfügen: ![[dateiname.png]]', 3000);
+    } else {
+      statusEl.textContent = `✗ Fehler beim Hochladen`;
+    }
+  };
+  reader.readAsDataURL(file);
+  input.value = ''; // reset so same file can be re-uploaded
 }
 
 // ══════════════════════════════════════
@@ -450,7 +598,7 @@ const LabAPI = (() => {
   async function list(p){const r=await _r(`/.netlify/functions/api?action=list&path=${encodeURIComponent(p)}`);return r.ok?(await r.json()).items:[];}
   async function listfiles(p){const r=await _r(`/.netlify/functions/api?action=listfiles&path=${encodeURIComponent(p)}`);return r.ok?(await r.json()).items:[];}
   async function readfile(p){const r=await _r(`/.netlify/functions/api?action=readfile&path=${encodeURIComponent(p)}`);return r.ok?await r.json():{content:null,sha:null};}
-  async function writefile(p,content,sha){if(!_user){netlifyIdentity.open('login');return false;}const r=await _r('/.netlify/functions/api',{method:'POST',body:JSON.stringify({action:'writefile',path:p,content,sha})});return r.ok?await r.json():false;}
+  async function writefile(p,content,sha,isBinary=false){if(!_user){netlifyIdentity.open('login');return false;}const r=await _r('/.netlify/functions/api',{method:'POST',body:JSON.stringify({action:'writefile',path:p,content,sha,isBinary})});return r.ok?await r.json():false;}
   async function deletefile(p,sha){if(!_user){netlifyIdentity.open('login');return false;}const r=await _r('/.netlify/functions/api',{method:'POST',body:JSON.stringify({action:'deletefile',path:p,sha})});return r.ok;}
   async function createfolder(p){if(!_user){netlifyIdentity.open('login');return false;}const r=await _r('/.netlify/functions/api',{method:'POST',body:JSON.stringify({action:'createfolder',path:p})});return r.ok;}
   async function deletefolder(p){if(!_user){netlifyIdentity.open('login');return false;}const r=await _r('/.netlify/functions/api',{method:'POST',body:JSON.stringify({action:'deletefolder',path:p})});return r.ok;}

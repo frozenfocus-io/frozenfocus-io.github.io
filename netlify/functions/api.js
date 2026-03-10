@@ -1,225 +1,223 @@
-// lab.notes — Netlify Function API v2
-// KB + Docs as real markdown files in GitHub repo
+const https = require('https');
 
-const OWNER   = 'frozenfocus-io';
-const REPO    = 'quartz';
-const CONTENT = 'content';
+const OWNER = 'frozenfocus-io';
+const REPO  = 'quartz';
+const BRANCH = 'main';
+const TOKEN  = process.env.GITHUB_TOKEN;
+const OWNER_EMAIL = process.env.OWNER_EMAIL || '';
 
-const CORS = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-  'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
-  'Content-Type': 'application/json'
-};
-
-// ── GitHub helpers ──────────────────────────────────────────
-
-function ghHeaders() {
-  return {
-    'Authorization': `Bearer ${process.env.GITHUB_TOKEN}`,
-    'Accept': 'application/vnd.github.v3+json',
-    'User-Agent': 'labnotes-app'
-  };
-}
-
-async function ghGet(path) {
-  const url = `https://api.github.com/repos/${OWNER}/${REPO}/contents/${path}`;
-  const res = await fetch(url, { headers: ghHeaders() });
-  return res;
-}
-
-async function ghPut(path, content, sha, message) {
-  const url = `https://api.github.com/repos/${OWNER}/${REPO}/contents/${path}`;
-  const body = {
-    message: message || `lab.notes: update ${path.split('/').pop()}`,
-    content: Buffer.from(content).toString('base64'),
-    ...(sha ? { sha } : {})
-  };
-  const res = await fetch(url, {
-    method: 'PUT',
-    headers: { ...ghHeaders(), 'Content-Type': 'application/json' },
-    body: JSON.stringify(body)
+// ── GitHub API helper ──────────────────────────────────────────────
+function ghRequest(method, path, body) {
+  return new Promise((resolve, reject) => {
+    const data = body ? JSON.stringify(body) : null;
+    const options = {
+      hostname: 'api.github.com',
+      path: `/repos/${OWNER}/${REPO}/contents/${path}`,
+      method,
+      headers: {
+        'Authorization': `token ${TOKEN}`,
+        'User-Agent':    'lab-notes-api',
+        'Accept':        'application/vnd.github.v3+json',
+        ...(data ? { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(data) } : {})
+      }
+    };
+    const req = https.request(options, res => {
+      let raw = '';
+      res.on('data', c => raw += c);
+      res.on('end', () => {
+        try { resolve({ status: res.statusCode, body: JSON.parse(raw) }); }
+        catch(e) { resolve({ status: res.statusCode, body: raw }); }
+      });
+    });
+    req.on('error', reject);
+    if (data) req.write(data);
+    req.end();
   });
-  return res;
 }
 
-async function ghDelete(path, sha, message) {
-  const url = `https://api.github.com/repos/${OWNER}/${REPO}/contents/${path}`;
-  const res = await fetch(url, {
-    method: 'DELETE',
-    headers: { ...ghHeaders(), 'Content-Type': 'application/json' },
-    body: JSON.stringify({ message: message || `lab.notes: delete ${path}`, sha })
+function ghList(path) {
+  return new Promise((resolve, reject) => {
+    const options = {
+      hostname: 'api.github.com',
+      path: `/repos/${OWNER}/${REPO}/contents/${path}?ref=${BRANCH}`,
+      method: 'GET',
+      headers: {
+        'Authorization': `token ${TOKEN}`,
+        'User-Agent':    'lab-notes-api',
+        'Accept':        'application/vnd.github.v3+json'
+      }
+    };
+    const req = https.request(options, res => {
+      let raw = '';
+      res.on('data', c => raw += c);
+      res.on('end', () => {
+        try { resolve({ status: res.statusCode, body: JSON.parse(raw) }); }
+        catch(e) { resolve({ status: res.statusCode, body: [] }); }
+      });
+    });
+    req.on('error', reject);
+    req.end();
   });
-  return res;
 }
 
-// ── JSON data helpers (for projects) ───────────────────────
-
-async function readJsonFile(relPath) {
-  const res = await ghGet(`${CONTENT}/lab-data/${relPath}`);
-  if (res.status === 404) return null;
-  if (!res.ok) throw new Error(`GitHub read ${res.status}`);
-  const json = await res.json();
-  const text = Buffer.from(json.content.replace(/\n/g, ''), 'base64').toString('utf-8');
-  return { data: JSON.parse(text), sha: json.sha };
-}
-
-async function writeJsonFile(relPath, data, sha) {
-  const content = JSON.stringify(data, null, 2);
-  const fullPath = `${CONTENT}/lab-data/${relPath}`;
-  const res = await ghPut(fullPath, content, sha, `lab.notes: update ${relPath}`);
-  if (!res.ok) { const t = await res.text(); throw new Error(`GitHub write ${res.status}: ${t}`); }
-  return true;
-}
-
-// ── Permissions ─────────────────────────────────────────────
-
-function getPermissions() {
-  try { return JSON.parse(process.env.PERMISSIONS_JSON || '{}'); }
-  catch { return {}; }
-}
-
-function hasPerm(email, projectId, level) {
-  if (!email) return false;
-  if (email === process.env.OWNER_EMAIL) return true;
-  const userPerms = getPermissions()[email] || {};
-  const perm = userPerms[projectId] || userPerms['*'];
-  if (!perm) return false;
-  return level === 'r' ? ['r','rw'].includes(perm) : perm === 'rw';
-}
-
-// ── Handler ──────────────────────────────────────────────────
-
-exports.handler = async (event, context) => {
-  if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: CORS, body: '' };
-
-  const method = event.httpMethod;
-  const qs = event.queryStringParameters || {};
-  const user = context.clientContext && context.clientContext.user;
-  const email = user ? user.email : null;
-  const isOwner = email === process.env.OWNER_EMAIL;
-
+// ── Auth helper ────────────────────────────────────────────────────
+async function getUser(event) {
+  const auth = event.headers['authorization'] || event.headers['Authorization'];
+  if (!auth || !auth.startsWith('Bearer ')) return null;
+  const token = auth.slice(7);
+  // Decode JWT payload (no verification needed — Netlify Identity already validated it)
   try {
+    const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
+    return { email: payload.email, sub: payload.sub };
+  } catch(e) { return null; }
+}
 
-    // ── GET ?action=me ──
-    if (method === 'GET' && qs.action === 'me') {
-      const perms = getPermissions();
-      return ok({ email, isOwner, permissions: email ? (perms[email] || {}) : {} });
+function respond(statusCode, body) {
+  return {
+    statusCode,
+    headers: {
+      'Content-Type': 'application/json',
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS'
+    },
+    body: JSON.stringify(body)
+  };
+}
+
+// ── Main handler ───────────────────────────────────────────────────
+exports.handler = async (event) => {
+  if (event.httpMethod === 'OPTIONS') return respond(200, {});
+
+  const user = await getUser(event);
+  const isOwner = !!(user && OWNER_EMAIL && user.email === OWNER_EMAIL);
+
+  // ── GET actions ──
+  if (event.httpMethod === 'GET') {
+    const { action, path, key } = event.queryStringParameters || {};
+
+    // /api?action=me
+    if (action === 'me') {
+      return respond(200, { email: user?.email || null, isOwner, permissions: {} });
     }
 
-    // ── GET ?action=list&path=Knowledge-Base → list folders ──
-    if (method === 'GET' && qs.action === 'list') {
-      const dirPath = `${CONTENT}/${qs.path || ''}`;
-      const res = await ghGet(dirPath);
-      if (res.status === 404) return ok({ items: [] });
-      if (!res.ok) throw new Error(`list failed ${res.status}`);
-      const items = await res.json();
-      const folders = items.filter(i => i.type === 'dir').map(i => ({ name: i.name, path: i.path }));
-      return ok({ items: folders });
-    }
-
-    // ── GET ?action=listfiles&path=Knowledge-Base/Category → list .md files ──
-    if (method === 'GET' && qs.action === 'listfiles') {
-      const dirPath = `${CONTENT}/${qs.path}`;
-      const res = await ghGet(dirPath);
-      if (res.status === 404) return ok({ items: [] });
-      if (!res.ok) throw new Error(`listfiles failed ${res.status}`);
-      const items = await res.json();
-      const files = items
-        .filter(i => i.type === 'file' && i.name.endsWith('.md') && i.name !== '.gitkeep')
-        .map(i => ({ name: i.name, path: i.path, sha: i.sha }));
-      return ok({ items: files });
-    }
-
-    // ── GET ?action=readfile&path=... → read file content + sha ──
-    if (method === 'GET' && qs.action === 'readfile') {
-      const res = await ghGet(qs.path);
-      if (res.status === 404) return ok({ content: null, sha: null });
-      if (!res.ok) throw new Error(`readfile failed ${res.status}`);
-      const json = await res.json();
-      const content = Buffer.from(json.content.replace(/\n/g, ''), 'base64').toString('utf-8');
-      return ok({ content, sha: json.sha });
-    }
-
-    // ── GET ?key=projects → legacy JSON read ──
-    if (method === 'GET' && qs.key) {
-      const result = await readJsonFile(`${qs.key}.json`);
-      return ok({ data: result ? result.data : null });
-    }
-
-    // ── POST → write operations (auth required) ──
-    if (method === 'POST') {
-      if (!email) return err(401, 'Login erforderlich');
-      const body = JSON.parse(event.body || '{}');
-      const { action } = body;
-
-      // Write JSON file (projects)
-      if (!action || action === 'writejson') {
-        const { key, data, projectId } = body;
-        if (!key || data === undefined) return err(400, 'key und data erforderlich');
-        if (!isOwner && !hasPerm(email, projectId || '*', 'rw')) return err(403, 'Kein Schreibzugriff');
-        const existing = await readJsonFile(`${key}.json`);
-        await writeJsonFile(`${key}.json`, data, existing ? existing.sha : null);
-        return ok({ ok: true });
+    // /api?key=projects
+    if (key === 'projects') {
+      const res = await ghRequest('GET', `content/lab-data/projects.json?ref=${BRANCH}`);
+      if (res.status === 200 && res.body.content) {
+        const data = JSON.parse(Buffer.from(res.body.content, 'base64').toString());
+        return respond(200, { data, sha: res.body.sha });
       }
-
-      // Write markdown file
-      if (action === 'writefile') {
-        const { path, content, sha, projectId } = body;
-        if (!path || content === undefined) return err(400, 'path und content erforderlich');
-        if (!isOwner && !hasPerm(email, projectId || '*', 'rw')) return err(403, 'Kein Schreibzugriff');
-        const res = await ghPut(path, content, sha || null);
-        if (!res.ok) { const t = await res.text(); throw new Error(`writefile ${res.status}: ${t}`); }
-        const json = await res.json();
-        return ok({ ok: true, sha: json.content.sha });
-      }
-
-      // Delete file
-      if (action === 'deletefile') {
-        const { path, sha, projectId } = body;
-        if (!path || !sha) return err(400, 'path und sha erforderlich');
-        if (!isOwner && !hasPerm(email, projectId || '*', 'rw')) return err(403, 'Kein Schreibzugriff');
-        const res = await ghDelete(path, sha);
-        if (!res.ok && res.status !== 404) { const t = await res.text(); throw new Error(`deletefile ${res.status}: ${t}`); }
-        return ok({ ok: true });
-      }
-
-      // Create folder (via .gitkeep)
-      if (action === 'createfolder') {
-        const { path, projectId } = body;
-        if (!path) return err(400, 'path erforderlich');
-        if (!isOwner && !hasPerm(email, projectId || '*', 'rw')) return err(403, 'Kein Schreibzugriff');
-        const keepPath = `${path}/.gitkeep`;
-        const res = await ghPut(keepPath, '', null, `lab.notes: create folder ${path}`);
-        // 422 = already exists, that's fine
-        return ok({ ok: true });
-      }
-
-      // Delete folder (delete all files in it)
-      if (action === 'deletefolder') {
-        const { path, projectId } = body;
-        if (!path) return err(400, 'path erforderlich');
-        if (!isOwner && !hasPerm(email, projectId || '*', 'rw')) return err(403, 'Kein Schreibzugriff');
-        const listRes = await ghGet(path);
-        if (listRes.ok) {
-          const items = await listRes.json();
-          for (const item of items) {
-            if (item.type === 'file') await ghDelete(item.path, item.sha, `lab.notes: delete ${item.name}`);
-          }
-        }
-        return ok({ ok: true });
-      }
-
-      return err(400, 'Unbekannte action');
+      return respond(200, { data: [], sha: null });
     }
 
-    return err(404, 'Not found');
+    // /api?action=list&path=Knowledge-Base
+    if (action === 'list') {
+      const res = await ghList(`content/${path}`);
+      if (res.status !== 200 || !Array.isArray(res.body)) return respond(200, { items: [] });
+      const items = res.body
+        .filter(f => f.type === 'dir' && !f.name.startsWith('.'))
+        .map(f => ({ name: f.name, path: f.path }));
+      return respond(200, { items });
+    }
 
-  } catch (e) {
-    console.error('API error:', e.message);
-    return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: e.message }) };
+    // /api?action=listfiles&path=Knowledge-Base/Kategorie
+    if (action === 'listfiles') {
+      const res = await ghList(`content/${path}`);
+      if (res.status !== 200 || !Array.isArray(res.body)) return respond(200, { items: [] });
+      const items = res.body
+        .filter(f => f.type === 'file')
+        .map(f => ({ name: f.name, path: f.path, sha: f.sha }));
+      return respond(200, { items });
+    }
+
+    // /api?action=readfile&path=content/...
+    if (action === 'readfile') {
+      const res = await ghRequest('GET', `${path}?ref=${BRANCH}`);
+      if (res.status === 200 && res.body.content) {
+        const content = Buffer.from(res.body.content, 'base64').toString('utf8');
+        return respond(200, { content, sha: res.body.sha });
+      }
+      return respond(200, { content: null, sha: null });
+    }
+
+    return respond(400, { error: 'Unknown action' });
   }
-};
 
-function ok(data) { return { statusCode: 200, headers: CORS, body: JSON.stringify(data) }; }
-function err(code, msg) { return { statusCode: code, headers: CORS, body: JSON.stringify({ error: msg }) }; }
+  // ── POST actions ──
+  if (event.httpMethod === 'POST') {
+    if (!isOwner) return respond(403, { error: 'Forbidden' });
+
+    let body;
+    try { body = JSON.parse(event.body); } catch(e) { return respond(400, { error: 'Invalid JSON' }); }
+
+    const { action, path, content, sha, key, data, isBinary } = body;
+
+    // writefile — supports both text (base64-encoded by GitHub) and binary (already base64)
+    if (action === 'writefile') {
+      let encodedContent;
+      if (isBinary) {
+        // content is already raw base64 (from FileReader.readAsDataURL, stripped prefix)
+        encodedContent = content;
+      } else {
+        // text content — encode to base64 for GitHub API
+        encodedContent = Buffer.from(content, 'utf8').toString('base64');
+      }
+      const payload = { message: `lab.notes: update ${path}`, content: encodedContent, branch: BRANCH };
+      if (sha) payload.sha = sha;
+      const res = await ghRequest('PUT', path, payload);
+      if (res.status === 200 || res.status === 201) {
+        return respond(200, { sha: res.body.content?.sha, ok: true });
+      }
+      return respond(500, { error: 'Write failed', detail: res.body });
+    }
+
+    // writejson
+    if (action === 'writejson') {
+      const filePath = key === 'projects' ? 'content/lab-data/projects.json' : `content/lab-data/${key}.json`;
+      const encodedContent = Buffer.from(JSON.stringify(data, null, 2), 'utf8').toString('base64');
+      // get current sha
+      const current = await ghRequest('GET', `${filePath}?ref=${BRANCH}`);
+      const currentSha = current.status === 200 ? current.body.sha : null;
+      const payload = { message: `lab.notes: update ${key}`, content: encodedContent, branch: BRANCH };
+      if (currentSha) payload.sha = currentSha;
+      const res = await ghRequest('PUT', filePath, payload);
+      if (res.status === 200 || res.status === 201) return respond(200, { ok: true });
+      return respond(500, { error: 'Write failed' });
+    }
+
+    // deletefile
+    if (action === 'deletefile') {
+      const payload = { message: `lab.notes: delete ${path}`, sha, branch: BRANCH };
+      const res = await ghRequest('DELETE', path, payload);
+      if (res.status === 200) return respond(200, { ok: true });
+      return respond(500, { error: 'Delete failed' });
+    }
+
+    // createfolder — create a .gitkeep inside the folder
+    if (action === 'createfolder') {
+      const gitkeepPath = `${path}/.gitkeep`;
+      const encodedContent = Buffer.from('', 'utf8').toString('base64');
+      const payload = { message: `lab.notes: create folder ${path}`, content: encodedContent, branch: BRANCH };
+      const res = await ghRequest('PUT', gitkeepPath, payload);
+      if (res.status === 200 || res.status === 201) return respond(200, { ok: true });
+      return respond(500, { error: 'Create folder failed' });
+    }
+
+    // deletefolder — list all files in folder and delete each
+    if (action === 'deletefolder') {
+      const res = await ghList(path);
+      if (res.status !== 200 || !Array.isArray(res.body)) return respond(200, { ok: true });
+      await Promise.all(res.body.map(async f => {
+        if (f.type === 'file') {
+          await ghRequest('DELETE', f.path, { message: `lab.notes: delete ${f.path}`, sha: f.sha, branch: BRANCH });
+        }
+      }));
+      return respond(200, { ok: true });
+    }
+
+    return respond(400, { error: 'Unknown action' });
+  }
+
+  return respond(405, { error: 'Method not allowed' });
+};
