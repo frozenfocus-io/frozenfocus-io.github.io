@@ -223,9 +223,9 @@
     /* ── FAVS ── */
     .cat-btn.favs{color:var(--amber)}
     .cat-btn.favs.active{color:var(--amber);background:rgba(240,168,67,.08)}
-    .fav-btn{position:absolute;bottom:10px;right:10px;background:none;border:none;cursor:pointer;font-size:15px;opacity:.4;transition:opacity .15s;line-height:1;padding:0}
-    .note-card:hover .fav-btn{opacity:1}
-    .fav-btn.active{opacity:1}
+    .fav-btn{background:none;border:none;cursor:pointer;font-size:15px;line-height:1;padding:2px;color:var(--text-dim);transition:color .15s}
+    .fav-btn:hover{color:var(--amber)}
+    .fav-btn.active{color:var(--amber)}
     .fav-badge{position:absolute;top:10px;left:10px;font-size:12px;line-height:1}
 
     footer{border-top:1px solid var(--border);padding:24px;display:flex;justify-content:space-between;font-size:11px;color:var(--text-dim);position:relative;z-index:1}
@@ -612,9 +612,11 @@ function noteCard(n,e){
     <div class="note-card-preview">${esc(preview)}${n.content.length>130?'…':''}</div>
     <div class="note-card-footer">
       <div class="note-tags">${tags}</div>
-      <span class="note-date">${n.date||''}</span>
+      <div style="display:flex;align-items:center;gap:6px">
+        <span class="note-date">${n.date||''}</span>
+        <button class="fav-btn${isFav?' active':''}" onclick="event.stopPropagation();toggleFav('${n.path}')">${isFav?'⭐':'☆'}</button>
+      </div>
     </div>
-    <button class="fav-btn${isFav?' active':''}" onclick="event.stopPropagation();toggleFav('${n.path}')" title="${isFav?'Aus Favoriten entfernen':'Zu Favoriten hinzufügen'}">${isFav?'⭐':'☆'}</button>
   </div>`;
 }
 
