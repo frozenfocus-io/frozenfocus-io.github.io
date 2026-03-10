@@ -174,6 +174,12 @@
     .md-body svg{max-width:100%;height:auto}
     .wikilink{color:var(--accent);text-decoration:underline;cursor:pointer;font-style:italic}
     .wikilink:hover{opacity:.75}
+    .trash-btn{width:100%;font-family:var(--font-mono);font-size:11px;color:var(--text-dim);background:transparent;border:none;padding:8px;cursor:pointer;text-align:left;margin-top:6px;border-radius:4px;transition:all .2s}
+    .trash-btn:hover{color:var(--accent);background:var(--bg-raised)}
+    .trash-item{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border);gap:12px}
+    .trash-item:last-child{border-bottom:none}
+    .trash-item-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px}
+    .trash-item-meta{font-size:11px;color:var(--text-dim)}
     .svg-block{margin:0 0 14px;padding:12px;background:var(--bg-raised);border:1px solid var(--border);border-radius:6px;overflow-x:auto}
     .svg-block svg{max-width:100%;height:auto;display:block;margin:0 auto}
     /* KaTeX override */
@@ -293,6 +299,9 @@
     <ul class="cat-list" id="cat-list"></ul>
     <div class="sidebar-footer">
       <button class="add-cat-btn" id="add-cat-btn" onclick="openAddCategory()" style="display:none">+ Kategorie hinzufügen</button>
+      <button class="trash-btn" id="trash-btn" onclick="openTrash()" title="Papierkorb" style="opacity:.45">
+        🗑 Papierkorb <span id="trash-badge" style="background:var(--accent);color:#fff;border-radius:10px;padding:1px 6px;font-size:10px;margin-left:4px"></span>
+      </button>
     </div>
   </aside>
   <main class="kb-main" id="kb-main">
@@ -392,6 +401,21 @@
       <button class="btn btn-ghost" onclick="exportPDF()" title="Als PDF speichern">⬇ PDF</button>
       <button class="btn btn-ghost" onclick="closeModal('modal-view')">Schließen</button>
       <button class="btn btn-primary" id="view-edit-btn" onclick="editFromView()" style="display:none">✎ Bearbeiten</button>
+    </div>
+  </div>
+</div>
+
+<!-- TRASH MODAL -->
+<div class="modal-overlay" id="modal-trash">
+  <div class="modal" style="max-width:680px;max-height:80vh">
+    <div class="modal-header">
+      <span class="modal-title">🗑 Papierkorb</span>
+      <span style="font-size:11px;color:var(--text-dim);margin-left:8px">Dateien werden nach 30 Tagen endgültig gelöscht</span>
+      <button class="modal-close" onclick="closeModal('modal-trash')">✕</button>
+    </div>
+    <div class="modal-body" id="trash-list"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-trash')">Schließen</button>
     </div>
   </div>
 </div>
@@ -496,11 +520,10 @@ function highlightCode(el) {
 // WIKILINK NAVIGATION
 // ══════════════════════════════════════
 async function openWikilink(target) {
-  // Search in currently loaded notes first
   const titleLower = target.toLowerCase();
+  // 1. Search current KB notes
   let found = notes.find(n => n.title.toLowerCase() === titleLower);
   if (!found) {
-    // Load all notes across all categories
     await loadAllNotes();
     for (const cat of Object.values(allNotesCache)) {
       found = cat.find(n => n.title.toLowerCase() === titleLower
@@ -508,15 +531,13 @@ async function openWikilink(target) {
       if (found) break;
     }
   }
-  if (found) {
-    viewNote(found.path);
-  } else {
-    // Show subtle toast instead of alert
-    showToast(`"${target}" nicht gefunden`);
-  }
+  if (found) { viewNote(found.path); return; }
+  // 2. Not in KB → try Docs (navigate with param)
+  showToast(`"${target}" nicht in KB — suche in Docs…`);
+  setTimeout(() => { window.location.href = `docs.html?wiki=${encodeURIComponent(target)}`; }, 900);
 }
 
-function showToast(msg) {
+function showToast(msg, duration=2500) {
   let t = document.getElementById('lab-toast');
   if (!t) {
     t = document.createElement('div');
@@ -527,7 +548,104 @@ function showToast(msg) {
   t.textContent = msg;
   t.style.opacity = '1';
   clearTimeout(t._timer);
-  t._timer = setTimeout(() => t.style.opacity = '0', 2500);
+  t._timer = setTimeout(() => t.style.opacity = '0', duration);
+}
+
+// ══════════════════════════════════════
+// PAPIERKORB
+// ══════════════════════════════════════
+const TRASH_KEY = 'lab-trash';
+const TRASH_DAYS = 30;
+
+function trashLoad() {
+  try { return JSON.parse(localStorage.getItem(TRASH_KEY)||'[]'); } catch(e) { return []; }
+}
+function trashSave(items) {
+  // Auto-purge items older than 30 days
+  const cutoff = Date.now() - TRASH_DAYS * 86400000;
+  localStorage.setItem(TRASH_KEY, JSON.stringify(items.filter(i => i.deletedAt > cutoff)));
+}
+function trashAdd(item) {
+  const items = trashLoad();
+  items.unshift({ ...item, deletedAt: Date.now(), type: 'kb' });
+  trashSave(items);
+}
+function trashCount() {
+  return trashLoad().filter(i => i.type === 'kb').length;
+}
+
+function openTrash() {
+  renderTrash();
+  openModal('modal-trash');
+}
+
+function renderTrash() {
+  const all = trashLoad().filter(i => i.type === 'kb');
+  const now = Date.now();
+  const container = document.getElementById('trash-list');
+  if (all.length === 0) {
+    container.innerHTML = '<div style="text-align:center;color:var(--text-dim);padding:40px 0;font-size:13px">🗑 Papierkorb ist leer</div>';
+    return;
+  }
+  container.innerHTML = all.map((item, idx) => {
+    const daysLeft = Math.ceil((item.deletedAt + TRASH_DAYS * 86400000 - now) / 86400000);
+    const urgentColor = daysLeft <= 7 ? 'var(--red, #e05555)' : daysLeft <= 14 ? 'var(--amber, #e0a020)' : 'var(--text-dim)';
+    return `<div class="trash-item">
+      <div class="trash-item-info">
+        <div class="trash-item-title">${esc(item.title)}</div>
+        <div class="trash-item-meta">${esc(item.cat||'')} · gelöscht ${new Date(item.deletedAt).toLocaleDateString('de-DE')}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+        <span style="font-size:11px;color:${urgentColor}">⏱ ${daysLeft}d</span>
+        <button class="btn btn-ghost btn-sm" onclick="trashRestore(${idx})">↩ Wiederherstellen</button>
+        <button class="btn btn-danger btn-sm" onclick="trashPurge(${idx})">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function trashRestore(idx) {
+  const all = trashLoad().filter(i => i.type === 'kb');
+  const item = all[idx];
+  if (!item) return;
+  const btn = event.target;
+  btn.textContent = '…'; btn.disabled = true;
+  const res = await LabAPI.writefile(item.path, item.content, null);
+  if (res) {
+    // Remove from trash
+    const full = trashLoad();
+    const realIdx = full.findIndex(i => i.type === 'kb' && i.path === item.path && i.deletedAt === item.deletedAt);
+    if (realIdx > -1) full.splice(realIdx, 1);
+    trashSave(full);
+    showToast(`"${item.title}" wiederhergestellt`);
+    renderTrash();
+    updateTrashBadge();
+    // Reload KB
+    await selectCat(activeCategory);
+  } else {
+    btn.textContent = '↩ Wiederherstellen'; btn.disabled = false;
+    showToast('Fehler beim Wiederherstellen');
+  }
+}
+
+function trashPurge(idx) {
+  const all = trashLoad().filter(i => i.type === 'kb');
+  const item = all[idx];
+  if (!item) return;
+  const full = trashLoad();
+  const realIdx = full.findIndex(i => i.type === 'kb' && i.path === item.path && i.deletedAt === item.deletedAt);
+  if (realIdx > -1) full.splice(realIdx, 1);
+  trashSave(full);
+  renderTrash();
+  updateTrashBadge();
+}
+
+function updateTrashBadge() {
+  const count = trashCount();
+  const badge = document.getElementById('trash-badge');
+  if (badge) badge.textContent = count > 0 ? count : '';
+  const btn = document.getElementById('trash-btn');
+  if (btn) btn.style.opacity = count > 0 ? '1' : '0.45';
 }
 function exportPDF() {
   if (!viewingNote) return;
@@ -879,8 +997,15 @@ async function saveNote(){
 function confirmDelNote(path){
   const n=notes.find(x=>x.path===path);if(!n)return;
   document.getElementById('confirm-title').textContent=`"${n.title}" löschen?`;
-  document.getElementById('confirm-sub').textContent='Die .md Datei wird aus GitHub gelöscht — auch in Obsidian weg nach git pull.';
-  pendingConfirm=async()=>{await LabAPI.deletefile(n.path,n.sha);await selectCat(activeCategory);};
+  document.getElementById('confirm-sub').textContent='Datei kommt in den Papierkorb (30 Tage wiederherstellbar).';
+  pendingConfirm=async()=>{
+    // Save to trash before deleting
+    const md = serializeFM({title:n.title,tags:n.tags||[],date:n.date||''},n.content);
+    trashAdd({title:n.title,path:n.path,content:md,cat:activeCategory?.name||'',sha:n.sha});
+    await LabAPI.deletefile(n.path,n.sha);
+    updateTrashBadge();
+    await selectCat(activeCategory);
+  };
   document.getElementById('confirm-overlay').classList.add('open');
 }
 
@@ -1080,9 +1205,14 @@ document.querySelectorAll('.modal-overlay').forEach(el=>el.addEventListener('cli
 document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.modal-overlay.open,.confirm-overlay.open').forEach(el=>el.classList.remove('open'));});
 
 let _kbInitDone=false;
-function _maybeInitKB(){if(!_kbInitDone){_kbInitDone=true;initKB();}}
+function _maybeInitKB(){if(!_kbInitDone){_kbInitDone=true;initKB().then(()=>{
+  // Handle ?wiki= param from cross-page wikilink
+  const wiki = new URLSearchParams(window.location.search).get('wiki');
+  if (wiki) { window.history.replaceState({},'',window.location.pathname); setTimeout(()=>openWikilink(wiki),500); }
+});}}
 
 LabAPI.init(u=>{updateAuthUI(u);_maybeInitKB();});
+updateTrashBadge();
 </script>
 </body>
 </html>
