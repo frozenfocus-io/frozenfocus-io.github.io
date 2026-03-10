@@ -509,7 +509,10 @@ function updateAuthUI(user){
   else{btn.textContent='Login';btn.className='auth-btn';disp.textContent='';}
   document.getElementById('add-cat-btn').style.display=LabAPI.isOwner()?'':'none';
   const veb=document.getElementById('view-edit-btn');if(veb)veb.style.display=LabAPI.isOwner()?'':'none';
+  // Re-render main content so edit buttons reflect auth state
   renderSidebar();
+  if(activeCategory && activeCategory.name!=='__search__' && activeCategory.name!=='__favs__') renderMain();
+  else if(activeCategory?.name==='__favs__') renderFavs();
 }
 function authAction(){if(LabAPI.getUser())LabAPI.logout();else LabAPI.login();}
 
@@ -892,8 +895,10 @@ document.getElementById('confirm-ok').onclick=()=>{if(pendingConfirm)pendingConf
 document.querySelectorAll('.modal-overlay').forEach(el=>el.addEventListener('click',e=>{if(e.target===el)el.classList.remove('open');}));
 document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.modal-overlay.open,.confirm-overlay.open').forEach(el=>el.classList.remove('open'));});
 
-LabAPI.init(updateAuthUI);
-initKB();
+let _kbInitDone=false;
+function _maybeInitKB(){if(!_kbInitDone){_kbInitDone=true;initKB();}}
+
+LabAPI.init(u=>{updateAuthUI(u);_maybeInitKB();});
 </script>
 </body>
 </html>

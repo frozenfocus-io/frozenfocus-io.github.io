@@ -422,7 +422,8 @@ function updateAuthUI(user){
   if(user){btn.textContent='Logout';btn.className='auth-btn logged-in';disp.textContent=user.email;}
   else{btn.textContent='Login';btn.className='auth-btn';disp.textContent='';}
   const veb=document.getElementById('view-edit-btn');if(veb)veb.style.display=LabAPI.isOwner()?'':'none';
-  renderPage();
+  // Only re-render if data already loaded (avoid blank render before initDocs completes)
+  if(allDocs.length>0||projects.length>0) renderPage();
 }
 function authAction(){if(LabAPI.getUser())LabAPI.logout();else LabAPI.login();}
 
@@ -720,8 +721,10 @@ document.getElementById('confirm-ok').onclick=()=>{if(pendingConfirm)pendingConf
 document.querySelectorAll('.modal-overlay').forEach(el=>el.addEventListener('click',e=>{if(e.target===el)el.classList.remove('open');}));
 document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.modal-overlay.open,.confirm-overlay.open').forEach(el=>el.classList.remove('open'));});
 
-LabAPI.init(updateAuthUI);
-initDocs();
+let _docsInitDone=false;
+function _maybeInitDocs(){if(!_docsInitDone){_docsInitDone=true;initDocs();}}
+
+LabAPI.init(u=>{updateAuthUI(u);_maybeInitDocs();});
 </script>
 </body>
 </html>
