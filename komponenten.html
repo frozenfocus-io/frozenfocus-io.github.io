@@ -121,6 +121,21 @@
     .confirm-sub{font-size:12px;color:var(--text-mid);margin-bottom:24px}
     .confirm-btns{display:flex;gap:8px;justify-content:center}
 
+    /* PROJECT FILTER ROW */
+    .filter-row{display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+    .filter-row-label{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim);white-space:nowrap}
+    .proj-pill{font-family:var(--font-mono);font-size:11px;padding:4px 10px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--text-dim);cursor:pointer;transition:all .15s}
+    .proj-pill:hover{color:var(--text);border-color:var(--border-hi)}
+    .proj-pill.active{color:var(--amber);border-color:rgba(240,168,67,.35);background:rgba(240,168,67,.07)}
+    /* PROJECT TAGS IN TABLE */
+    .td-projs{display:flex;gap:4px;flex-wrap:wrap}
+    .td-proj-tag{font-size:10px;padding:1px 7px;border-radius:3px;background:rgba(240,168,67,.08);border:1px solid rgba(240,168,67,.25);color:var(--amber);white-space:nowrap}
+    /* PROJECT CHECKBOXES IN MODAL */
+    .proj-checks{display:flex;flex-direction:column;gap:6px;max-height:140px;overflow-y:auto;background:var(--bg-raised);border:1px solid var(--border);border-radius:4px;padding:10px 12px}
+    .proj-check-item{display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:var(--text-mid);padding:2px 0;user-select:none}
+    .proj-check-item:hover{color:var(--text)}
+    .proj-check-item input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;cursor:pointer}
+
     ::-webkit-scrollbar{width:5px}
     ::-webkit-scrollbar-track{background:transparent}
     ::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
@@ -133,10 +148,10 @@
     <a href="index.html" class="nav-logo">lab.notes <span>/ EE Engineering</span></a>
     <ul class="nav-links">
       <li><a href="index.html">Home</a></li>
-      <li><a href="projects.html">Projekte</a></li>
+      <li><a href="projects.html">Projects</a></li>
       <li><a href="docs.html">Docs</a></li>
       <li><a href="kb.html">Knowledge Base</a></li>
-      <li><a href="komponenten.html" class="active">Komponenten</a></li>
+      <li><a href="komponenten.html" class="active">Components</a></li>
     </ul>
     <div style="display:flex;align-items:center;gap:8px">
       <button class="theme-toggle" onclick="toggleTheme()">
@@ -152,7 +167,7 @@
 <div class="site-wrap">
   <!-- TOOLBAR -->
   <div class="toolbar">
-    <span class="page-title">Kompon<span class="hl">enten</span></span>
+    <span class="page-title">Comp<span class="hl">onents</span></span>
     <div class="search-wrap">
       <span class="search-icon">⌕</span>
       <input class="search-input" id="search-input" placeholder="Name, Wert, Gehäuse..." oninput="onSearch(this.value)" autocomplete="off"/>
@@ -160,7 +175,11 @@
     <div class="filter-pills" id="cat-pills"></div>
     <span class="spacer"></span>
     <span class="meta-text" id="meta-text"></span>
-    <button class="btn btn-primary" id="add-btn" onclick="openAdd()" style="display:none">+ Komponente</button>
+    <button class="btn btn-primary" id="add-btn" onclick="openAdd()" style="display:none">+ Component</button>
+  </div>
+  <div class="filter-row" id="proj-filter-row" style="display:none">
+    <span class="filter-row-label">Projekt:</span>
+    <div id="proj-pills"></div>
   </div>
 
   <!-- TABLE -->
@@ -173,6 +192,7 @@
           <th onclick="sortBy('package')">Gehäuse</th>
           <th onclick="sortBy('category')">Kategorie</th>
           <th onclick="sortBy('price')">Preis</th>
+          <th>Projekte</th>
           <th>Datasheet</th>
           <th>Notiz</th>
           <th style="width:80px"></th>
@@ -230,9 +250,14 @@
           <div class="form-hint">Externer Link, keine Datei</div>
         </div>
       </div>
-      <div class="form-group" style="margin-bottom:0">
+      <div class="form-group" style="margin-bottom:18px">
         <label class="form-label">Notiz</label>
         <input class="form-input" id="c-note" placeholder="z.B. Verwendet in ESC, Bootstrap-Cap 220nF"/>
+      </div>
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label">Projekte</label>
+        <div class="proj-checks" id="c-projects"></div>
+        <div class="form-hint">Mehrfachauswahl möglich</div>
       </div>
     </div>
     <div class="modal-footer">
@@ -290,7 +315,7 @@ const LabAPI = (() => {
 function authAction(){if(LabAPI.getUser())LabAPI.logout();else LabAPI.login();}
 
 // ══ STATE ══
-let components=[], searchQuery='', activeCategory='all', sortCol='name', sortDir='asc';
+let components=[], projects=[], searchQuery='', activeCategory='all', activeProject='all', sortCol='name', sortDir='asc';
 let editingComp=null, pendingConfirm=null;
 
 const CAT_LABELS={mosfet:'MOSFET',ic:'IC / Treiber',resistor:'Widerstand',cap:'Kondensator',sensor:'Sensor',connector:'Stecker',other:'Sonstiges'};
@@ -298,7 +323,10 @@ const CAT_ICONS={mosfet:'⚡',ic:'🔌',resistor:'〜',cap:'|(',sensor:'👁',co
 
 // ══ INIT ══
 async function initComponents(){
-  components = await LabAPI.read('components', SAMPLE_COMPONENTS);
+  [components, projects] = await Promise.all([
+    LabAPI.read('components', SAMPLE_COMPONENTS),
+    LabAPI.read('projects', [])
+  ]);
   renderAll();
 }
 
@@ -314,6 +342,7 @@ function updateAuthUI(user){
 // ══ RENDER ══
 function renderAll(){
   renderCatPills();
+  renderProjPills();
   renderTable();
 }
 
@@ -322,15 +351,23 @@ function renderCatPills(){
   const counts={};components.forEach(c=>{counts[c.category]=(counts[c.category]||0)+1;});
   document.getElementById('cat-pills').innerHTML=cats.map(cat=>`
     <button class="pill${activeCategory===cat?' active':''}" onclick="setCategory('${cat}')">
-      ${cat==='all'?'Alle ('+components.length+')':((CAT_ICONS[cat]||''))+' '+(CAT_LABELS[cat]||cat)+' ('+( counts[cat]||0)+')'}
+      ${cat==='all'?'Alle ('+components.length+')':((CAT_ICONS[cat]||''))+' '+(CAT_LABELS[cat]||cat)+' ('+(counts[cat]||0)+')'}
     </button>`).join('');
+}
+
+function renderProjPills(){
+  const row=document.getElementById('proj-filter-row');
+  if(!projects.length){row.style.display='none';return;}
+  row.style.display='flex';
+  document.getElementById('proj-pills').innerHTML=
+    `<button class="proj-pill${activeProject==='all'?' active':''}" onclick="setProject('all')">Alle</button>`+
+    projects.map(p=>`<button class="proj-pill${activeProject===p.id?' active':''}" onclick="setProject('${p.id}')">${p.icon||''} ${esc(p.name)}</button>`).join('');
 }
 
 function renderTable(){
   let list=[...components];
-  // Filter category
   if(activeCategory!=='all') list=list.filter(c=>c.category===activeCategory);
-  // Search
+  if(activeProject!=='all') list=list.filter(c=>(c.projects||[]).includes(activeProject));
   if(searchQuery){
     const q=searchQuery.toLowerCase();
     list=list.filter(c=>
@@ -341,7 +378,6 @@ function renderTable(){
       (CAT_LABELS[c.category]||'').toLowerCase().includes(q)
     );
   }
-  // Sort
   list.sort((a,b)=>{
     let av=a[sortCol]||'',bv=b[sortCol]||'';
     if(sortCol==='price'){av=parseFloat(av)||0;bv=parseFloat(bv)||0;}
@@ -349,48 +385,63 @@ function renderTable(){
     return sortDir==='asc'?(av>bv?1:av<bv?-1:0):(av<bv?1:av>bv?-1:0);
   });
 
-  document.getElementById('meta-text').textContent=`${list.length} von ${components.length} Komponenten`;
-
-  // Update sort indicators
-  document.querySelectorAll('thead th').forEach(th=>{
-    th.classList.remove('sort-asc','sort-desc');
-  });
+  document.getElementById('meta-text').textContent=`${list.length} von ${components.length} Components`;
 
   const tbody=document.getElementById('table-body');
   if(list.length===0){
-    tbody.innerHTML=`<tr><td colspan="8"><div class="empty-state"><div class="empty-icon">🔌</div><div>Keine Komponenten gefunden</div></div></td></tr>`;
+    tbody.innerHTML=`<tr><td colspan="9"><div class="empty-state"><div class="empty-icon">🔌</div><div>Keine Komponenten gefunden</div></div></td></tr>`;
     return;
   }
   const canEdit=LabAPI.isOwner();
-  tbody.innerHTML=list.map(c=>`
-    <tr>
+  tbody.innerHTML=list.map(c=>{
+    const projNames=(c.projects||[]).map(pid=>{const p=projects.find(x=>x.id===pid);return p?`<span class="td-proj-tag">${p.icon||''} ${esc(p.name)}</span>`:null;}).filter(Boolean).join('');
+    return`<tr>
       <td class="td-name">${esc(c.name)}</td>
       <td class="td-val">${esc(c.value||'—')}</td>
       <td><span class="td-pkg">${esc(c.package||'—')}</span></td>
       <td><span class="td-cat cat-${c.category}">${CAT_ICONS[c.category]||''} ${CAT_LABELS[c.category]||c.category}</span></td>
       <td class="td-price">${c.price?parseFloat(c.price).toFixed(2)+' €':'—'}</td>
+      <td><div class="td-projs">${projNames||'<span style="color:var(--text-dim);font-size:12px">—</span>'}</div></td>
       <td>${c.datasheet?`<a class="td-link" href="${esc(c.datasheet)}" target="_blank" rel="noopener">↗ Datasheet</a>`:'<span style="color:var(--text-dim);font-size:12px">—</span>'}</td>
-      <td style="font-size:12px;color:var(--text-mid);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(c.note||'')}">${esc(c.note||'—')}</td>
+      <td style="font-size:12px;color:var(--text-mid);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(c.note||'')}">${esc(c.note||'—')}</td>
       <td>${canEdit?`<div class="td-actions">
         <button class="btn btn-ghost btn-sm" onclick="openEdit('${c.id}')">✎</button>
         <button class="btn btn-danger btn-sm" onclick="confirmDel('${c.id}')">✕</button>
       </div>`:''}
       </td>
-    </tr>`).join('');
+    </tr>`;
+  }).join('');
 }
 
 function setCategory(cat){activeCategory=cat;renderAll();}
+function setProject(id){activeProject=id;renderAll();}
 function sortBy(col){if(sortCol===col)sortDir=sortDir==='asc'?'desc':'asc';else{sortCol=col;sortDir='asc';}renderTable();}
 
 let _searchTimer;
 function onSearch(q){clearTimeout(_searchTimer);_searchTimer=setTimeout(()=>{searchQuery=q;renderTable();},200);}
 
+// ══ PROJECT CHECKBOXES IN MODAL ══
+function renderProjChecks(selectedIds){
+  const container=document.getElementById('c-projects');
+  if(!projects.length){container.innerHTML='<span style="font-size:12px;color:var(--text-dim)">Keine Projekte vorhanden</span>';return;}
+  container.innerHTML=projects.map(p=>`
+    <label class="proj-check-item">
+      <input type="checkbox" value="${p.id}" ${(selectedIds||[]).includes(p.id)?'checked':''}/>
+      ${p.icon||''} ${esc(p.name)}
+    </label>`).join('');
+}
+
+function getSelectedProjects(){
+  return [...document.querySelectorAll('#c-projects input[type=checkbox]:checked')].map(cb=>cb.value);
+}
+
 // ══ CRUD ══
 function openAdd(){
   editingComp=null;
-  document.getElementById('modal-title').textContent='Neue Komponente';
+  document.getElementById('modal-title').textContent='New Component';
   ['c-name','c-value','c-package','c-price','c-datasheet','c-note'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('c-category').value='other';
+  renderProjChecks([]);
   openModal('modal-comp');
   setTimeout(()=>document.getElementById('c-name').focus(),100);
 }
@@ -398,7 +449,7 @@ function openAdd(){
 function openEdit(id){
   const c=components.find(x=>x.id===id);if(!c)return;
   editingComp=c;
-  document.getElementById('modal-title').textContent='Komponente bearbeiten';
+  document.getElementById('modal-title').textContent='Edit Component';
   document.getElementById('c-name').value=c.name||'';
   document.getElementById('c-value').value=c.value||'';
   document.getElementById('c-package').value=c.package||'';
@@ -406,6 +457,7 @@ function openEdit(id){
   document.getElementById('c-price').value=c.price||'';
   document.getElementById('c-datasheet').value=c.datasheet||'';
   document.getElementById('c-note').value=c.note||'';
+  renderProjChecks(c.projects||[]);
   openModal('modal-comp');
 }
 
@@ -422,6 +474,7 @@ async function saveComp(){
     price:document.getElementById('c-price').value||'',
     datasheet:document.getElementById('c-datasheet').value.trim(),
     note:document.getElementById('c-note').value.trim(),
+    projects:getSelectedProjects(),
     updatedAt:Date.now()
   };
   if(editingComp){
