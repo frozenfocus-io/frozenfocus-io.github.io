@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="de" data-theme="dark">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <script>(function(){const s=localStorage.getItem('lab-theme');const sys=window.matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';document.documentElement.setAttribute('data-theme',s||sys);})();</script>
+  <title>lab.notes — Komponenten</title>
+  <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;0,700;1,300&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+  <style>
+    :root,[data-theme="dark"]{--bg:#07090a;--bg-raised:#0d1114;--bg-card:#101518;--border:#1c2830;--border-hi:#2a404e;--accent:#29e07f;--accent-dim:#1a6e43;--amber:#f0a843;--red:#e05a5a;--red-dim:#5a1a1a;--text:#dde8e2;--text-mid:#7a9e8e;--text-dim:#3a5548;--scan:rgba(0,255,120,0.015);--font-mono:'JetBrains Mono',monospace;--font-dis:'Syne',sans-serif}
+    [data-theme="light"]{--bg:#f4f6f5;--bg-raised:#eaeeec;--bg-card:#ffffff;--border:#d0dbd5;--border-hi:#a8c4b8;--accent:#1a8f52;--accent-dim:#c8eedd;--amber:#c47a00;--red:#c0392b;--red-dim:#fde8e6;--text:#1a2620;--text-mid:#4a6a5a;--text-dim:#8aaa9a;--scan:transparent}
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{background:var(--bg);color:var(--text);font-family:var(--font-mono);font-size:14px;line-height:1.7;min-height:100vh;overflow-x:hidden;transition:background .25s,color .25s}
+    [data-theme="dark"] body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,var(--scan) 2px,var(--scan) 4px);pointer-events:none;z-index:100}
+    [data-theme="dark"] body::after{content:'';position:fixed;inset:0;background-image:linear-gradient(var(--border) 1px,transparent 1px),linear-gradient(90deg,var(--border) 1px,transparent 1px);background-size:40px 40px;opacity:.35;pointer-events:none;z-index:0}
+
+    .theme-toggle{width:44px;height:24px;border-radius:12px;background:var(--bg-raised);border:1px solid var(--border);cursor:pointer;position:relative;transition:all .2s;flex-shrink:0}
+    .theme-toggle::after{content:'';position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:var(--text-dim);transition:transform .2s,background .2s}
+    [data-theme="light"] .theme-toggle::after{transform:translateX(20px);background:var(--accent)}
+    .theme-toggle-icon{position:absolute;top:50%;transform:translateY(-50%);font-size:10px;pointer-events:none}
+    .theme-toggle-icon.moon{left:5px}.theme-toggle-icon.sun{right:4px}
+    nav{position:sticky;top:0;z-index:50;background:rgba(7,9,10,.85);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:0 24px}
+    .nav-inner{max-width:1400px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;height:56px}
+    .nav-logo{font-family:var(--font-dis);font-weight:800;font-size:17px;letter-spacing:-.5px;color:var(--accent);text-decoration:none;display:flex;align-items:center;gap:8px}
+    .nav-logo span{color:var(--text-mid);font-weight:400;font-size:13px;font-family:var(--font-mono)}
+    .nav-links{display:flex;gap:2px;list-style:none}
+    .nav-links a{color:var(--text-mid);text-decoration:none;padding:6px 14px;border-radius:4px;font-size:12px;letter-spacing:.05em;transition:color .2s,background .2s}
+    .nav-links a:hover,.nav-links a.active{color:var(--accent);background:rgba(41,224,127,.07)}
+    .auth-btn{font-family:var(--font-mono);font-size:11px;padding:5px 12px;border-radius:4px;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text-dim);transition:all .2s}
+    .auth-btn:hover{color:var(--accent);border-color:var(--accent-dim)}
+    .auth-btn.logged-in{color:var(--accent);border-color:var(--accent-dim);background:rgba(41,224,127,.07)}
+
+    .site-wrap{position:relative;z-index:1;max-width:1400px;margin:0 auto;padding:24px 32px}
+
+    /* TOOLBAR */
+    .toolbar{display:flex;align-items:center;gap:12px;margin-bottom:24px;flex-wrap:wrap}
+    .page-title{font-family:var(--font-dis);font-size:22px;font-weight:800;color:var(--text);letter-spacing:-.5px;margin-right:8px}
+    .page-title .hl{color:var(--accent)}
+    .search-wrap{position:relative;flex:1;min-width:200px;max-width:340px}
+    .search-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text-dim);font-size:13px;pointer-events:none}
+    .search-input{width:100%;background:var(--bg-raised);border:1px solid var(--border);border-radius:4px;padding:9px 14px 9px 34px;font-family:var(--font-mono);font-size:12px;color:var(--text);outline:none;transition:border-color .2s}
+    .search-input:focus{border-color:var(--accent-dim)}
+    .filter-pills{display:flex;gap:6px;flex-wrap:wrap}
+    .pill{font-family:var(--font-mono);font-size:11px;padding:5px 12px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--text-dim);cursor:pointer;transition:all .15s}
+    .pill:hover{color:var(--text);border-color:var(--border-hi)}
+    .pill.active{color:var(--accent);border-color:var(--accent-dim);background:rgba(41,224,127,.07)}
+    .spacer{flex:1}
+    .meta-text{font-size:11px;color:var(--text-dim)}
+
+    /* BUTTONS */
+    .btn{font-family:var(--font-mono);font-size:11px;padding:7px 14px;border-radius:4px;cursor:pointer;border:1px solid;transition:all .2s;letter-spacing:.05em;white-space:nowrap}
+    .btn-sm{padding:5px 10px}
+    .btn-primary{color:var(--accent);border-color:var(--accent-dim);background:rgba(41,224,127,.07)}
+    .btn-primary:hover{background:rgba(41,224,127,.15)}
+    .btn-ghost{color:var(--text-mid);border-color:var(--border);background:transparent}
+    .btn-ghost:hover{color:var(--text);border-color:var(--border-hi)}
+    .btn-danger{color:var(--red);border-color:var(--red-dim);background:transparent}
+    .btn-danger:hover{background:rgba(224,90,90,.08)}
+
+    /* TABLE */
+    .table-wrap{background:var(--bg-card);border:1px solid var(--border);border-radius:6px;overflow:hidden}
+    table{width:100%;border-collapse:collapse}
+    thead tr{border-bottom:1px solid var(--border)}
+    thead th{padding:12px 16px;text-align:left;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim);font-weight:500;white-space:nowrap;cursor:pointer;user-select:none;transition:color .15s}
+    thead th:hover{color:var(--text)}
+    thead th.sort-asc::after{content:' ↑';color:var(--accent)}
+    thead th.sort-desc::after{content:' ↓';color:var(--accent)}
+    tbody tr{border-bottom:1px solid var(--border);transition:background .1s}
+    tbody tr:last-child{border-bottom:none}
+    tbody tr:hover{background:var(--bg-raised)}
+    td{padding:11px 16px;font-size:13px;color:var(--text);vertical-align:middle}
+    .td-name{font-weight:600;color:var(--text)}
+    .td-val{color:var(--text-mid)}
+    .td-pkg{font-size:11px;padding:2px 8px;border-radius:3px;background:var(--bg-raised);border:1px solid var(--border);color:var(--text-dim);white-space:nowrap;display:inline-block}
+    .td-price{color:var(--accent);font-weight:600}
+    .td-cat{font-size:11px;padding:2px 8px;border-radius:3px;border:1px solid;white-space:nowrap}
+    .td-link{color:var(--text-dim);text-decoration:none;font-size:12px;padding:3px 8px;border:1px solid var(--border);border-radius:3px;transition:all .15s;white-space:nowrap}
+    .td-link:hover{color:var(--accent);border-color:var(--accent-dim)}
+    .td-actions{display:flex;gap:4px;opacity:0;transition:opacity .15s}
+    tbody tr:hover .td-actions{opacity:1}
+    .empty-state{text-align:center;padding:60px 24px;color:var(--text-dim)}
+    .empty-icon{font-size:36px;margin-bottom:12px;opacity:.3}
+
+    /* CAT COLORS */
+    .cat-mosfet{color:var(--amber);border-color:rgba(240,168,67,.3)}
+    .cat-resistor{color:var(--text-mid);border-color:var(--border)}
+    .cat-cap{color:#4ab4f0;border-color:rgba(74,180,240,.3)}
+    .cat-ic{color:var(--accent);border-color:var(--accent-dim)}
+    .cat-sensor{color:#c07fff;border-color:rgba(192,127,255,.3)}
+    .cat-connector{color:var(--text-mid);border-color:var(--border)}
+    .cat-other{color:var(--text-dim);border-color:var(--border)}
+
+    /* MODAL */
+    .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(4px);z-index:200;display:none;align-items:center;justify-content:center;padding:24px}
+    .modal-overlay.open{display:flex}
+    .modal{background:var(--bg-card);border:1px solid var(--border-hi);border-radius:8px;width:100%;max-width:560px;max-height:90vh;overflow-y:auto;animation:mIn .2s ease}
+    @keyframes mIn{from{opacity:0;transform:scale(.96) translateY(8px)}to{opacity:1;transform:none}}
+    .modal-header{padding:20px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+    .modal-title{font-family:var(--font-dis);font-size:16px;font-weight:700;color:var(--text)}
+    .modal-close{width:28px;height:28px;border-radius:4px;background:transparent;border:none;color:var(--text-dim);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:all .15s}
+    .modal-close:hover{color:var(--text);background:var(--bg-raised)}
+    .modal-body{padding:24px}
+    .modal-footer{padding:16px 24px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px}
+    .form-group{margin-bottom:18px}
+    .form-label{display:block;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim);margin-bottom:8px}
+    .form-input{width:100%;background:var(--bg-raised);border:1px solid var(--border);border-radius:4px;padding:10px 14px;font-family:var(--font-mono);font-size:13px;color:var(--text);outline:none;transition:border-color .2s}
+    .form-input:focus{border-color:var(--accent-dim)}
+    .form-select{width:100%;background:var(--bg-raised);border:1px solid var(--border);border-radius:4px;padding:10px 14px;font-family:var(--font-mono);font-size:13px;color:var(--text);outline:none;cursor:pointer}
+    .form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+    .form-hint{font-size:11px;color:var(--text-dim);margin-top:4px}
+
+    /* CONFIRM */
+    .confirm-overlay{position:fixed;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(4px);z-index:300;display:none;align-items:center;justify-content:center}
+    .confirm-overlay.open{display:flex}
+    .confirm-box{background:var(--bg-card);border:1px solid var(--red-dim);border-radius:8px;padding:28px;max-width:380px;width:90%;text-align:center}
+    .confirm-icon{font-size:28px;margin-bottom:14px}
+    .confirm-title{font-family:var(--font-dis);font-size:16px;color:var(--text);margin-bottom:8px}
+    .confirm-sub{font-size:12px;color:var(--text-mid);margin-bottom:24px}
+    .confirm-btns{display:flex;gap:8px;justify-content:center}
+
+    ::-webkit-scrollbar{width:5px}
+    ::-webkit-scrollbar-track{background:transparent}
+    ::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <a href="index.html" class="nav-logo">lab.notes <span>/ EE Engineering</span></a>
+    <ul class="nav-links">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="projects.html">Projekte</a></li>
+      <li><a href="docs.html">Docs</a></li>
+      <li><a href="kb.html">Knowledge Base</a></li>
+      <li><a href="komponenten.html" class="active">Komponenten</a></li>
+    </ul>
+    <div style="display:flex;align-items:center;gap:8px">
+      <button class="theme-toggle" onclick="toggleTheme()">
+        <span class="theme-toggle-icon moon">🌙</span>
+        <span class="theme-toggle-icon sun">☀️</span>
+      </button>
+      <span style="font-size:11px;color:var(--text-mid)" id="auth-user-display"></span>
+      <button class="auth-btn" id="auth-btn" onclick="authAction()">Login</button>
+    </div>
+  </div>
+</nav>
+
+<div class="site-wrap">
+  <!-- TOOLBAR -->
+  <div class="toolbar">
+    <span class="page-title">Kompon<span class="hl">enten</span></span>
+    <div class="search-wrap">
+      <span class="search-icon">⌕</span>
+      <input class="search-input" id="search-input" placeholder="Name, Wert, Gehäuse..." oninput="onSearch(this.value)" autocomplete="off"/>
+    </div>
+    <div class="filter-pills" id="cat-pills"></div>
+    <span class="spacer"></span>
+    <span class="meta-text" id="meta-text"></span>
+    <button class="btn btn-primary" id="add-btn" onclick="openAdd()" style="display:none">+ Komponente</button>
+  </div>
+
+  <!-- TABLE -->
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th onclick="sortBy('name')">Name</th>
+          <th onclick="sortBy('value')">Wert</th>
+          <th onclick="sortBy('package')">Gehäuse</th>
+          <th onclick="sortBy('category')">Kategorie</th>
+          <th onclick="sortBy('price')">Preis</th>
+          <th>Datasheet</th>
+          <th>Notiz</th>
+          <th style="width:80px"></th>
+        </tr>
+      </thead>
+      <tbody id="table-body"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ADD/EDIT MODAL -->
+<div class="modal-overlay" id="modal-comp">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="modal-title">Neue Komponente</span>
+      <button class="modal-close" onclick="closeModal('modal-comp')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row" style="margin-bottom:18px">
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label">Name *</label>
+          <input class="form-input" id="c-name" placeholder="z.B. IRFZ44N"/>
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label">Wert</label>
+          <input class="form-input" id="c-value" placeholder="z.B. 60V 50A"/>
+        </div>
+      </div>
+      <div class="form-row" style="margin-bottom:18px">
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label">Gehäuse</label>
+          <input class="form-input" id="c-package" placeholder="z.B. TO-220, 0603, DIP-8"/>
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label">Kategorie</label>
+          <select class="form-select" id="c-category">
+            <option value="mosfet">MOSFET</option>
+            <option value="ic">IC / Treiber</option>
+            <option value="resistor">Widerstand</option>
+            <option value="cap">Kondensator</option>
+            <option value="sensor">Sensor</option>
+            <option value="connector">Stecker / Kabel</option>
+            <option value="other">Sonstiges</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row" style="margin-bottom:18px">
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label">Preis (€)</label>
+          <input class="form-input" id="c-price" type="number" step="0.01" min="0" placeholder="0.00"/>
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label">Datasheet URL</label>
+          <input class="form-input" id="c-datasheet" placeholder="https://..."/>
+          <div class="form-hint">Externer Link, keine Datei</div>
+        </div>
+      </div>
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label">Notiz</label>
+        <input class="form-input" id="c-note" placeholder="z.B. Verwendet in ESC, Bootstrap-Cap 220nF"/>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-comp')">Abbrechen</button>
+      <button class="btn btn-primary" id="comp-save-btn" onclick="saveComp()">Speichern</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM -->
+<div class="confirm-overlay" id="confirm-overlay">
+  <div class="confirm-box">
+    <div class="confirm-icon">⚠</div>
+    <div class="confirm-title" id="confirm-title">Sicher?</div>
+    <div class="confirm-sub" id="confirm-sub"></div>
+    <div class="confirm-btns">
+      <button class="btn btn-ghost" onclick="closeConfirm()">Abbrechen</button>
+      <button class="btn btn-danger" id="confirm-ok">Löschen</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══ THEME ══
+function toggleTheme(){const c=document.documentElement.getAttribute('data-theme');const n=c==='dark'?'light':'dark';document.documentElement.setAttribute('data-theme',n);localStorage.setItem('lab-theme',n);}
+
+// ══ API ══
+const LabAPI = (() => {
+  let _user=null,_isOwner=false;
+  async function init(cb){
+    if(typeof netlifyIdentity==='undefined'){cb(null);return;}
+    netlifyIdentity.on('login',async u=>{netlifyIdentity.close();_user=u;await _me();cb(_user);});
+    netlifyIdentity.on('logout',()=>{_user=null;_isOwner=false;cb(null);});
+    netlifyIdentity.on('init',async u=>{_user=u;if(u)await _me();cb(_user);});
+    netlifyIdentity.init();
+  }
+  async function _me(){try{const r=await _r('/.netlify/functions/api?action=me');if(r.ok){const d=await r.json();_isOwner=d.isOwner;}}catch(e){}}
+  function _r(url,opts={}){const t=_user?.token?.access_token;return fetch(url,{...opts,headers:{'Content-Type':'application/json',...(t?{'Authorization':`Bearer ${t}`}:{}),... (opts.headers||{})}});}
+  async function read(key,def=null){
+    try{const r=await _r(`/.netlify/functions/api?key=${key}`);if(r.ok){const{data}=await r.json();if(data!==null){localStorage.setItem('cache-'+key,JSON.stringify(data));return data;}}}catch(e){}
+    const c=localStorage.getItem('cache-'+key);return c?JSON.parse(c):def;
+  }
+  async function write(key,data){
+    if(!_user){netlifyIdentity.open('login');return false;}
+    localStorage.setItem('cache-'+key,JSON.stringify(data));
+    try{const r=await _r('/.netlify/functions/api',{method:'POST',body:JSON.stringify({key,data})});return r.ok;}catch(e){return false;}
+  }
+  function isOwner(){return _isOwner;}
+  function getUser(){return _user;}
+  function login(){netlifyIdentity.open('login');}
+  function logout(){netlifyIdentity.logout();}
+  return{init,read,write,isOwner,getUser,login,logout};
+})();
+
+function authAction(){if(LabAPI.getUser())LabAPI.logout();else LabAPI.login();}
+
+// ══ STATE ══
+let components=[], searchQuery='', activeCategory='all', sortCol='name', sortDir='asc';
+let editingComp=null, pendingConfirm=null;
+
+const CAT_LABELS={mosfet:'MOSFET',ic:'IC / Treiber',resistor:'Widerstand',cap:'Kondensator',sensor:'Sensor',connector:'Stecker',other:'Sonstiges'};
+const CAT_ICONS={mosfet:'⚡',ic:'🔌',resistor:'〜',cap:'|(',sensor:'👁',connector:'🔗',other:'🔧'};
+
+// ══ INIT ══
+async function initComponents(){
+  components = await LabAPI.read('components', SAMPLE_COMPONENTS);
+  renderAll();
+}
+
+function updateAuthUI(user){
+  const btn=document.getElementById('auth-btn');
+  const disp=document.getElementById('auth-user-display');
+  if(user){btn.textContent='Logout';btn.className='auth-btn logged-in';disp.textContent=user.email;}
+  else{btn.textContent='Login';btn.className='auth-btn';disp.textContent='';}
+  document.getElementById('add-btn').style.display=LabAPI.isOwner()?'':'none';
+  renderAll();
+}
+
+// ══ RENDER ══
+function renderAll(){
+  renderCatPills();
+  renderTable();
+}
+
+function renderCatPills(){
+  const cats=['all',...new Set(components.map(c=>c.category))].filter(Boolean);
+  const counts={};components.forEach(c=>{counts[c.category]=(counts[c.category]||0)+1;});
+  document.getElementById('cat-pills').innerHTML=cats.map(cat=>`
+    <button class="pill${activeCategory===cat?' active':''}" onclick="setCategory('${cat}')">
+      ${cat==='all'?'Alle ('+components.length+')':((CAT_ICONS[cat]||''))+' '+(CAT_LABELS[cat]||cat)+' ('+( counts[cat]||0)+')'}
+    </button>`).join('');
+}
+
+function renderTable(){
+  let list=[...components];
+  // Filter category
+  if(activeCategory!=='all') list=list.filter(c=>c.category===activeCategory);
+  // Search
+  if(searchQuery){
+    const q=searchQuery.toLowerCase();
+    list=list.filter(c=>
+      c.name.toLowerCase().includes(q)||
+      (c.value||'').toLowerCase().includes(q)||
+      (c.package||'').toLowerCase().includes(q)||
+      (c.note||'').toLowerCase().includes(q)||
+      (CAT_LABELS[c.category]||'').toLowerCase().includes(q)
+    );
+  }
+  // Sort
+  list.sort((a,b)=>{
+    let av=a[sortCol]||'',bv=b[sortCol]||'';
+    if(sortCol==='price'){av=parseFloat(av)||0;bv=parseFloat(bv)||0;}
+    else{av=String(av).toLowerCase();bv=String(bv).toLowerCase();}
+    return sortDir==='asc'?(av>bv?1:av<bv?-1:0):(av<bv?1:av>bv?-1:0);
+  });
+
+  document.getElementById('meta-text').textContent=`${list.length} von ${components.length} Komponenten`;
+
+  // Update sort indicators
+  document.querySelectorAll('thead th').forEach(th=>{
+    th.classList.remove('sort-asc','sort-desc');
+  });
+
+  const tbody=document.getElementById('table-body');
+  if(list.length===0){
+    tbody.innerHTML=`<tr><td colspan="8"><div class="empty-state"><div class="empty-icon">🔌</div><div>Keine Komponenten gefunden</div></div></td></tr>`;
+    return;
+  }
+  const canEdit=LabAPI.isOwner();
+  tbody.innerHTML=list.map(c=>`
+    <tr>
+      <td class="td-name">${esc(c.name)}</td>
+      <td class="td-val">${esc(c.value||'—')}</td>
+      <td><span class="td-pkg">${esc(c.package||'—')}</span></td>
+      <td><span class="td-cat cat-${c.category}">${CAT_ICONS[c.category]||''} ${CAT_LABELS[c.category]||c.category}</span></td>
+      <td class="td-price">${c.price?parseFloat(c.price).toFixed(2)+' €':'—'}</td>
+      <td>${c.datasheet?`<a class="td-link" href="${esc(c.datasheet)}" target="_blank" rel="noopener">↗ Datasheet</a>`:'<span style="color:var(--text-dim);font-size:12px">—</span>'}</td>
+      <td style="font-size:12px;color:var(--text-mid);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(c.note||'')}">${esc(c.note||'—')}</td>
+      <td>${canEdit?`<div class="td-actions">
+        <button class="btn btn-ghost btn-sm" onclick="openEdit('${c.id}')">✎</button>
+        <button class="btn btn-danger btn-sm" onclick="confirmDel('${c.id}')">✕</button>
+      </div>`:''}
+      </td>
+    </tr>`).join('');
+}
+
+function setCategory(cat){activeCategory=cat;renderAll();}
+function sortBy(col){if(sortCol===col)sortDir=sortDir==='asc'?'desc':'asc';else{sortCol=col;sortDir='asc';}renderTable();}
+
+let _searchTimer;
+function onSearch(q){clearTimeout(_searchTimer);_searchTimer=setTimeout(()=>{searchQuery=q;renderTable();},200);}
+
+// ══ CRUD ══
+function openAdd(){
+  editingComp=null;
+  document.getElementById('modal-title').textContent='Neue Komponente';
+  ['c-name','c-value','c-package','c-price','c-datasheet','c-note'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('c-category').value='other';
+  openModal('modal-comp');
+  setTimeout(()=>document.getElementById('c-name').focus(),100);
+}
+
+function openEdit(id){
+  const c=components.find(x=>x.id===id);if(!c)return;
+  editingComp=c;
+  document.getElementById('modal-title').textContent='Komponente bearbeiten';
+  document.getElementById('c-name').value=c.name||'';
+  document.getElementById('c-value').value=c.value||'';
+  document.getElementById('c-package').value=c.package||'';
+  document.getElementById('c-category').value=c.category||'other';
+  document.getElementById('c-price').value=c.price||'';
+  document.getElementById('c-datasheet').value=c.datasheet||'';
+  document.getElementById('c-note').value=c.note||'';
+  openModal('modal-comp');
+}
+
+async function saveComp(){
+  const name=document.getElementById('c-name').value.trim();
+  if(!name){document.getElementById('c-name').focus();return;}
+  const btn=document.getElementById('comp-save-btn');btn.textContent='Speichert...';btn.disabled=true;
+  const data={
+    id:editingComp?.id||'comp-'+Date.now(),
+    name,
+    value:document.getElementById('c-value').value.trim(),
+    package:document.getElementById('c-package').value.trim(),
+    category:document.getElementById('c-category').value,
+    price:document.getElementById('c-price').value||'',
+    datasheet:document.getElementById('c-datasheet').value.trim(),
+    note:document.getElementById('c-note').value.trim(),
+    updatedAt:Date.now()
+  };
+  if(editingComp){
+    const idx=components.findIndex(x=>x.id===editingComp.id);
+    if(idx>-1)components[idx]=data;
+  } else {
+    components.push(data);
+  }
+  await LabAPI.write('components',components);
+  btn.textContent='Speichern';btn.disabled=false;
+  closeModal('modal-comp');
+  renderAll();
+}
+
+function confirmDel(id){
+  const c=components.find(x=>x.id===id);if(!c)return;
+  document.getElementById('confirm-title').textContent=`"${c.name}" löschen?`;
+  document.getElementById('confirm-sub').textContent='Die Komponente wird aus der Datenbank entfernt.';
+  pendingConfirm=async()=>{
+    components=components.filter(x=>x.id!==id);
+    await LabAPI.write('components',components);
+    renderAll();
+  };
+  document.getElementById('confirm-overlay').classList.add('open');
+}
+
+// ══ UTILS ══
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function openModal(id){document.getElementById(id).classList.add('open');}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+function closeConfirm(){document.getElementById('confirm-overlay').classList.remove('open');pendingConfirm=null;}
+document.getElementById('confirm-ok').onclick=()=>{if(pendingConfirm)pendingConfirm();closeConfirm();};
+document.querySelectorAll('.modal-overlay').forEach(el=>el.addEventListener('click',e=>{if(e.target===el)el.classList.remove('open');}));
+document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.modal-overlay.open,.confirm-overlay.open').forEach(el=>el.classList.remove('open'));});
+
+// ══ SAMPLE DATA (first load) ══
+const SAMPLE_COMPONENTS=[
+  {id:'comp-1',name:'IRFZ44N',value:'60V 50A',package:'TO-220',category:'mosfet',price:'0.89',datasheet:'https://www.infineon.com/dgdl/irfz44n.pdf',note:'ESC H-Bridge, N-Kanal',updatedAt:Date.now()},
+  {id:'comp-2',name:'IR2110',value:'10A Gate Driver',package:'DIP-14',category:'ic',price:'2.20',datasheet:'',note:'High/Low-Side Gate Driver',updatedAt:Date.now()},
+  {id:'comp-3',name:'STM32F401',value:'84MHz Cortex-M4',package:'LQFP-64',category:'ic',price:'4.50',datasheet:'',note:'MCU für ESC',updatedAt:Date.now()},
+  {id:'comp-4',name:'100nF Keramik',value:'100nF 50V',package:'0402',category:'cap',price:'0.05',datasheet:'',note:'Bypass Kondensator',updatedAt:Date.now()},
+  {id:'comp-5',name:'10kΩ',value:'10kΩ 1%',package:'0603',category:'resistor',price:'0.02',datasheet:'',note:'Pull-up',updatedAt:Date.now()},
+];
+
+// ══ BOOT ══
+let _initDone=false;
+LabAPI.init(u=>{updateAuthUI(u);if(!_initDone){_initDone=true;initComponents();}});
+</script>
+</body>
+</html>

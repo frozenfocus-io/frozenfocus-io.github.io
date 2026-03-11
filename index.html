@@ -186,6 +186,16 @@
     .confirm-sub{font-size:12px;color:var(--text-mid);margin-bottom:24px}
     .confirm-btns{display:flex;gap:8px;justify-content:center}
 
+    .nav-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px}
+    .nav-card{background:var(--bg-card);border:1px solid var(--border);border-radius:6px;padding:24px;text-decoration:none;transition:border-color .2s,transform .2s;position:relative;overflow:hidden;display:block}
+    .nav-card::before{content:'';position:absolute;top:0;left:0;width:100%;height:2px;background:linear-gradient(90deg,var(--accent),transparent);opacity:0;transition:opacity .2s}
+    .nav-card:hover{border-color:var(--border-hi);transform:translateY(-2px)}
+    .nav-card:hover::before{opacity:1}
+    .nav-card-icon{font-size:24px;margin-bottom:12px}
+    .nav-card-title{font-family:var(--font-dis);font-size:16px;font-weight:700;color:var(--text);margin-bottom:6px}
+    .nav-card-desc{font-size:11px;color:var(--text-mid);line-height:1.7;margin-bottom:14px}
+    .nav-card-stat{font-size:11px;color:var(--accent);font-weight:600}
+
     footer{border-top:1px solid var(--border);padding:32px 24px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;font-size:11px;color:var(--text-dim);max-width:1100px;margin:0 auto;position:relative;z-index:1}
     .footer-sig{color:var(--accent)}
 
@@ -207,9 +217,11 @@
   <div class="nav-inner">
     <a href="index.html" class="nav-logo">lab.notes <span>/ EE Engineering</span></a>
     <ul class="nav-links">
-      <li><a href="#projekte" class="active">Projekte</a></li>
+      <li><a href="index.html" class="active">Home</a></li>
+      <li><a href="projects.html">Projekte</a></li>
       <li><a href="docs.html">Docs</a></li>
       <li><a href="kb.html">Knowledge Base</a></li>
+      <li><a href="komponenten.html">Komponenten</a></li>
     </ul>
     <div class="nav-status"><div class="status-dot"></div>aktiv</div>
     <div style="display:flex;align-items:center;gap:8px;">
@@ -231,27 +243,53 @@
     <div class="hero-meta" id="hero-meta"></div>
   </div>
 
-  <section id="projekte">
+  <!-- NAV CARDS -->
+  <section>
     <div class="section-header">
       <span class="section-num">01</span>
-      <h2 class="section-title">Projekte</h2>
+      <h2 class="section-title">Navigation</h2>
       <div class="section-line"></div>
-      <button class="section-action" onclick="openAddProject()">+ Neues Projekt</button>
     </div>
-    <div class="projects-grid" id="projects-grid"></div>
-    <div id="progress-section"></div>
+    <div class="nav-cards">
+      <a href="projects.html" class="nav-card">
+        <div class="nav-card-icon">⚙️</div>
+        <div class="nav-card-title">Projekte</div>
+        <div class="nav-card-desc">Todos, Zeiterfassung &amp; Changelog pro Projekt</div>
+        <div class="nav-card-stat" id="stat-projects">— Projekte</div>
+      </a>
+      <a href="docs.html" class="nav-card">
+        <div class="nav-card-icon">📐</div>
+        <div class="nav-card-title">Projektdocs</div>
+        <div class="nav-card-desc">Technische Dokumentationen, Analysen, Schaltpläne</div>
+        <div class="nav-card-stat" id="stat-docs">— Dokumente</div>
+      </a>
+      <a href="kb.html" class="nav-card">
+        <div class="nav-card-icon">📝</div>
+        <div class="nav-card-title">Knowledge Base</div>
+        <div class="nav-card-desc">Notizen, Konzepte, Lernmaterial nach Kategorie</div>
+        <div class="nav-card-stat" id="stat-kb">— Notizen</div>
+      </a>
+      <a href="komponenten.html" class="nav-card">
+        <div class="nav-card-icon">🔌</div>
+        <div class="nav-card-title">Komponenten</div>
+        <div class="nav-card-desc">Bauteil-Datenbank mit Datasheet-Links und Preisen</div>
+        <div class="nav-card-stat" id="stat-comp">— Bauteile</div>
+      </a>
+    </div>
   </section>
 
-  <section id="kb">
+  <!-- ACTIVE PROJECTS -->
+  <section id="projekte">
     <div class="section-header">
       <span class="section-num">02</span>
-      <h2 class="section-title">Knowledge Base</h2>
+      <h2 class="section-title">Aktive Projekte</h2>
       <div class="section-line"></div>
-      <a href="kb.html" class="section-action">Öffnen →</a>
+      <a href="projects.html" class="section-action">Alle Projekte →</a>
     </div>
-    <div class="kb-grid" id="kb-grid"></div>
+    <div class="projects-grid" id="projects-grid"></div>
   </section>
 
+  <!-- RECENTLY VIEWED -->
   <section id="recent">
     <div class="section-header">
       <span class="section-num">03</span>
@@ -262,6 +300,7 @@
     <div id="recent-grid"></div>
   </section>
 
+  <!-- KI EXPORT -->
   <section id="export">
     <div class="section-header">
       <span class="section-num">04</span>
@@ -270,7 +309,6 @@
     </div>
     <p style="font-size:12px;color:var(--text-mid);max-width:520px;margin-bottom:32px;line-height:1.8;">
       Exportiere deinen Projektstand als Markdown-Datei und füge sie in ein KI-Gespräch ein.
-      Für jedes Projekt gibt es automatisch einen eigenen Export-Button.
     </p>
     <div class="export-grid" id="export-grid"></div>
   </section>
@@ -280,60 +318,6 @@
   <span>lab.notes — Persönliches Engineering-Journal</span>
   <span class="footer-sig">built by hand · 2026</span>
 </footer>
-
-<!-- PROJECT MODAL -->
-<div class="modal-overlay" id="modal-project">
-  <div class="modal">
-    <div class="modal-header">
-      <span class="modal-title" id="modal-project-title">Neues Projekt</span>
-      <button class="modal-close" onclick="closeModal('modal-project')">✕</button>
-    </div>
-    <div class="modal-body">
-      <div class="form-group">
-        <label class="form-label">Icon</label>
-        <div class="icon-grid" id="proj-icon-grid"></div>
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label class="form-label">Projektname</label>
-          <input class="form-input" id="proj-name" placeholder="z.B. ESC Quadcopter"/>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Status</label>
-          <select class="form-select" id="proj-status">
-            <option value="wip">⚡ In Arbeit</option>
-            <option value="planned">○ Geplant</option>
-            <option value="done">✓ Fertig</option>
-          </select>
-        </div>
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label class="form-label">Startdatum</label>
-          <input class="form-input" id="proj-date" placeholder="z.B. Mär 2026"/>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Tags (kommagetrennt)</label>
-          <input class="form-input" id="proj-tags" placeholder="z.B. STM32, MOSFET"/>
-        </div>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Beschreibung</label>
-        <textarea class="form-textarea" id="proj-desc" placeholder="Kurze Projektbeschreibung..."></textarea>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Fortschritts-Schritte</label>
-        <div class="progress-editor" id="progress-editor"></div>
-        <button class="add-p-btn" onclick="addProgressRow()">+ Schritt hinzufügen</button>
-        <div class="form-hint">Jeden Schritt mit Name und Prozent (0–100)</div>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal('modal-project')">Abbrechen</button>
-      <button class="btn btn-primary" onclick="saveProject()">Speichern</button>
-    </div>
-  </div>
-</div>
 
 <!-- CONFIRM -->
 <div class="confirm-overlay" id="confirm-overlay">
@@ -348,9 +332,49 @@
   </div>
 </div>
 
+
 <script>
 // ── THEME ──
 function toggleTheme(){const c=document.documentElement.getAttribute('data-theme');const n=c==='dark'?'light':'dark';document.documentElement.setAttribute('data-theme',n);localStorage.setItem('lab-theme',n);}
+
+// ── UTILS ──
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function timeAgo(dt){const s=Math.floor((Date.now()-new Date(dt))/1000);if(s<60)return'gerade eben';if(s<3600)return`vor ${Math.floor(s/60)} Min`;if(s<86400)return`vor ${Math.floor(s/3600)} Std`;return`vor ${Math.floor(s/86400)} Tagen`;}
+function closeConfirm(){document.getElementById('confirm-overlay').classList.remove('open');}
+document.getElementById('confirm-ok').onclick=()=>closeConfirm();
+
+// ── API (read-only on homepage) ──
+const LabAPI=(() => {
+  let _user=null,_isOwner=false;
+  async function init(cb){
+    if(typeof netlifyIdentity==='undefined'){cb(null);return;}
+    netlifyIdentity.on('login',async u=>{netlifyIdentity.close();_user=u;await _me();cb(_user);});
+    netlifyIdentity.on('logout',()=>{_user=null;_isOwner=false;cb(null);});
+    netlifyIdentity.on('init',async u=>{_user=u;if(u)await _me();cb(_user);});
+    netlifyIdentity.init();
+  }
+  async function _me(){try{const r=await _r('/.netlify/functions/api?action=me');if(r.ok){const d=await r.json();_isOwner=d.isOwner;}}catch(e){}}
+  function _r(url,opts={}){const t=_user?.token?.access_token;return fetch(url,{...opts,headers:{'Content-Type':'application/json',...(t?{'Authorization':`Bearer ${t}`}:{})}});}
+  async function read(key,def=null){
+    try{const r=await _r(`/.netlify/functions/api?key=${key}`);if(r.ok){const{data}=await r.json();if(data!==null){localStorage.setItem('cache-'+key,JSON.stringify(data));return data;}}}catch(e){}
+    const c=localStorage.getItem('cache-'+key);return c?JSON.parse(c):def;
+  }
+  function isOwner(){return _isOwner;}
+  function getUser(){return _user;}
+  function login(){netlifyIdentity.open('login');}
+  function logout(){netlifyIdentity.logout();}
+  return{init,read,isOwner,getUser,login,logout};
+})();
+
+function authAction(){if(LabAPI.getUser())LabAPI.logout();else LabAPI.login();}
+
+// ── AUTH UI ──
+function updateAuthUI(user){
+  const btn=document.getElementById('auth-btn');
+  const disp=document.getElementById('auth-user-display');
+  if(user){btn.textContent='Logout';btn.className='auth-btn logged-in';disp.textContent=user.email;}
+  else{btn.textContent='Login';btn.className='auth-btn';disp.textContent='';}
+}
 
 // ── RECENTLY VIEWED ──
 function renderRecent(){
@@ -358,9 +382,8 @@ function renderRecent(){
   const grid=document.getElementById('recent-grid');
   if(!grid)return;
   if(!recent.length){grid.innerHTML='<div class="recent-empty">Noch nichts geöffnet — öffne Notizen in der KB oder Docs, sie erscheinen hier.</div>';return;}
-  const timeAgo=dt=>{const s=Math.floor((Date.now()-new Date(dt))/1000);if(s<60)return'gerade eben';if(s<3600)return`vor ${Math.floor(s/60)} Min`;if(s<86400)return`vor ${Math.floor(s/3600)} Std`;return`vor ${Math.floor(s/86400)} Tagen`;};
   grid.innerHTML=`<div class="recent-grid">${recent.slice(0,8).map(r=>{
-    const href=r.type==='kb'?`kb.html`:r.type==='doc'?`docs.html`:'#';
+    const href=r.type==='kb'?'kb.html':r.type==='doc'?'docs.html':'#';
     return`<a href="${href}" class="recent-card" title="${esc(r.title)}">
       <div class="recent-top">
         <span class="recent-icon">${r.icon||'📝'}</span>
@@ -373,457 +396,62 @@ function renderRecent(){
 }
 function clearRecent(){localStorage.removeItem('lab-recently');renderRecent();}
 
-// ═══════════════════════════════════════════
-// LAB API — shared auth + data layer
-// ═══════════════════════════════════════════
-const LabAPI = (() => {
-  let _user = null, _isOwner = false, _perms = {};
-
-  async function init(onAuthChange) {
-    if (typeof netlifyIdentity === 'undefined') { onAuthChange(null); return; }
-    netlifyIdentity.on('login', async u => {
-      netlifyIdentity.close(); _user = u;
-      await _fetchMe(); onAuthChange(_user);
-    });
-    netlifyIdentity.on('logout', () => {
-      _user = null; _isOwner = false; _perms = {};
-      onAuthChange(null);
-    });
-    netlifyIdentity.on('init', async u => {
-      _user = u;
-      if (u) await _fetchMe();
-      onAuthChange(_user);
-    });
-    netlifyIdentity.init();
-  }
-
-  async function _fetchMe() {
-    try {
-      const res = await _apiFetch('/.netlify/functions/api?action=me');
-      if (res.ok) { const d = await res.json(); _isOwner = d.isOwner; _perms = d.permissions || {}; }
-    } catch(e) { console.warn('fetchMe failed', e); }
-  }
-
-  function _apiFetch(url, opts = {}) {
-    const token = _user?.token?.access_token;
-    return fetch(url, { ...opts, headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-      ...(opts.headers || {})
-    }});
-  }
-
-  async function read(key, def = null) {
-    // Show cached immediately, fetch fresh in background
-    const cacheKey = 'cache-' + key;
-    try {
-      const res = await _apiFetch(`/.netlify/functions/api?key=${key}`);
-      if (res.ok) {
-        const { data } = await res.json();
-        if (data !== null) { localStorage.setItem(cacheKey, JSON.stringify(data)); return data; }
-      }
-    } catch(e) { console.warn('API read failed, using cache'); }
-    // Fall back to cache, then legacy localStorage key, then default
-    const cached = localStorage.getItem(cacheKey);
-    if (cached) return JSON.parse(cached);
-    const legacyMap = { 'projects': 'lab-projects', 'kb': 'kb-data', 'docs': 'docs-data' };
-    const legacy = legacyMap[key] ? localStorage.getItem(legacyMap[key]) : null;
-    if (legacy) return JSON.parse(legacy);
-    return def;
-  }
-
-  async function list(p) {
-    try { const r = await _apiFetch(`/.netlify/functions/api?action=list&path=${encodeURIComponent(p)}`); return r.ok ? (await r.json()).items : []; } catch(e) { return []; }
-  }
-  async function listfiles(p) {
-    try { const r = await _apiFetch(`/.netlify/functions/api?action=listfiles&path=${encodeURIComponent(p)}`); return r.ok ? (await r.json()).items : []; } catch(e) { return []; }
-  }
-  async function readfile(p) {
-    try { const r = await _apiFetch(`/.netlify/functions/api?action=readfile&path=${encodeURIComponent(p)}`); return r.ok ? await r.json() : {content:null,sha:null}; } catch(e) { return {content:null,sha:null}; }
-  }
-
-  async function write(key, data, projectId) {
-    if (!_user) { netlifyIdentity.open('login'); return false; }
-    // Optimistic cache update
-    localStorage.setItem('cache-' + key, JSON.stringify(data));
-    try {
-      const res = await _apiFetch('/.netlify/functions/api', {
-        method: 'POST',
-        body: JSON.stringify({ key, data, projectId })
-      });
-      if (!res.ok) { const e = await res.json(); console.error('Write failed:', e.error); return false; }
-      return true;
-    } catch(e) { console.error('Write error:', e); return false; }
-  }
-
-  function canEdit(projectId) {
-    if (!_user) return false;
-    if (_isOwner) return true;
-    const perm = _perms[projectId] || _perms['*'];
-    return perm === 'rw';
-  }
-
-  function isOwner() { return _isOwner; }
-  function getUser() { return _user; }
-  function login() { netlifyIdentity.open('login'); }
-  function logout() { netlifyIdentity.logout(); }
-
-  return { init, read, write, list, listfiles, readfile, canEdit, isOwner, getUser, login, logout };
-})();
-
-// ═══════════════════════════════════════════
-// DATA + STATE
-// ═══════════════════════════════════════════
-const ICONS = ['⚡','🔌','💾','📐','🛠️','🔬','🧪','🔋','🎛️','📡','🤖','🚁','🔧','🖥️','📦','⚙️','🔁','🧮','💡','🗂️'];
-
-const DEFAULT_PROJECTS = [
-  { id:'proj-esc', icon:'⚡', name:'ESC Quadcopter', status:'wip', date:'Mär 2026',
-    tags:['STM32','MOSFET','PWM','BLDC'],
-    desc:'Entwicklung eines Electronic Speed Controllers für bürstenlose Motoren. Fokus auf 3-phasige Kommutierung, Gate-Driver-Schaltung und Firmware auf Basis eines Cortex-M4.',
-    progress:[{label:'Konzept & Schaltungsdesign',pct:70},{label:'Gate-Driver & Power Stage',pct:30},{label:'Firmware / BLDC Kommutierung',pct:10},{label:'PCB Layout & Fertigung',pct:0}]},
-  { id:'proj-rc', icon:'📡', name:'RC-Empfänger', status:'planned', date:'Q3 2026', tags:['RF','433 MHz'], desc:'Eigenbau-Empfänger als Companion für den ESC.', progress:[]},
-  { id:'proj-fc', icon:'🤖', name:'Custom Flight Controller', status:'planned', date:'später 2026', tags:['KiCad','PCB','IMU'], desc:'Eigenes PCB-Layout mit IMU-Integration.', progress:[]}
-];
-
-let projects = [];
-let editingId = null, selIcon = '⚡', pendingConfirm = null, pRows = [];
-
-// ═══════════════════════════════════════════
-// AUTH UI
-// ═══════════════════════════════════════════
-function updateAuthUI(user) {
-  const btn = document.getElementById('auth-btn');
-  const disp = document.getElementById('auth-user-display');
-  if (user) {
-    btn.textContent = 'Logout';
-    btn.className = 'auth-btn logged-in';
-    disp.textContent = user.email;
-  } else {
-    btn.textContent = 'Login';
-    btn.className = 'auth-btn';
-    disp.textContent = '';
-  }
-  // Show/hide edit controls based on owner status
-  document.querySelectorAll('.edit-only').forEach(el => {
-    el.style.display = LabAPI.isOwner() ? '' : 'none';
-  });
-  render();
-}
-
-function authAction() {
-  if (LabAPI.getUser()) LabAPI.logout();
-  else LabAPI.login();
-}
-
-// ═══════════════════════════════════════════
-// RENDER
-// ═══════════════════════════════════════════
-async function render() {
-  projects = await LabAPI.read('projects', DEFAULT_PROJECTS);
-  renderHero();
-  renderProjects();
-  await renderKB();
-  renderExport();
-}
-
-function renderHero() {
-  const wip = projects.filter(p=>p.status==='wip');
-  document.getElementById('hero-meta').innerHTML = `
-    <div class="meta-item"><span class="meta-label">Aktive Projekte</span><span class="meta-value"><span class="acc">${wip.length}</span> In Arbeit</span></div>
-    <div class="meta-item"><span class="meta-label">Projekte gesamt</span><span class="meta-value"><span class="acc">${projects.length}</span> Einträge</span></div>
-    ${wip[0]?`<div class="meta-item"><span class="meta-label">Aktuell</span><span class="meta-value"><span class="amb">${wip[0].icon} ${esc(wip[0].name)}</span></span></div>`:''}
-  `;
-}
-
-function renderProjects() {
-  const canEdit = LabAPI.isOwner();
-  document.getElementById('projects-grid').innerHTML = projects.map(p=>`
-    <div class="project-card fade-in">
-      <span class="card-tag ${p.status}">${statusLabel(p.status)}</span>
-      <div class="card-chips">${(p.tags||[]).map(t=>`<span class="chip">${esc(t)}</span>`).join('')}</div>
-      <div class="card-title">${p.icon} ${esc(p.name)}</div>
+// ── PROJECTS ──
+function renderProjects(projects){
+  const grid=document.getElementById('projects-grid');
+  const wip=projects.filter(p=>p.status==='wip'||p.status==='planned');
+  document.getElementById('stat-projects').textContent=`${projects.length} Projekte`;
+  if(!wip.length){grid.innerHTML='<div style="color:var(--text-dim);font-size:12px">Keine aktiven Projekte — <a href="projects.html" style="color:var(--accent)">Projekte verwalten →</a></div>';return;}
+  grid.innerHTML=wip.map(p=>`
+    <a href="projects.html" class="project-card fade-in" style="text-decoration:none">
+      <div class="card-tag ${p.status}">${p.status==='wip'?'In Arbeit':'Geplant'}</div>
+      <div class="card-chips">${(p.chips||[]).map(c=>`<span class="chip">${esc(c)}</span>`).join('')}</div>
+      <div class="card-title">${p.icon||''} ${esc(p.name)}</div>
       <div class="card-desc">${esc(p.desc||'')}</div>
-      <div class="card-footer">
-        <span class="card-date">${esc(p.date||'')}</span>
-        <div class="card-actions" style="${canEdit?'':'display:none'}">
-          <button class="card-btn card-btn-edit" onclick="openEdit('${p.id}')">✎</button>
-          <button class="card-btn card-btn-del" onclick="confirmDel('${p.id}')">✕</button>
-        </div>
-      </div>
-    </div>
-  `).join('');
-
-  const wip = projects.filter(p=>p.status==='wip'&&p.progress&&p.progress.length>0);
-  document.getElementById('progress-section').innerHTML = wip.map(p=>`
-    <div class="dot-divider">${p.icon} ${esc(p.name)} · Fortschritt</div>
-    <div class="progress-list">
-      ${p.progress.map(s=>`
-        <div><div class="progress-header"><span class="progress-label">${esc(s.label)}</span><span class="progress-pct">${s.pct}%</span></div>
-        <div class="progress-bar"><div class="progress-fill" style="width:${s.pct}%"></div></div></div>
-      `).join('')}
-    </div>
-  `).join('');
-
-  // Show/hide "Neues Projekt" button
-  const addBtn = document.querySelector('.section-action[onclick="openAddProject()"]');
-  if (addBtn) addBtn.style.display = canEdit ? '' : 'none';
+      ${(p.progress||[]).length>0?`<div class="progress-list">${p.progress.slice(0,2).map(pr=>`
+        <div><div class="progress-header"><span class="progress-label">${esc(pr.label)}</span><span class="progress-pct">${pr.pct}%</span></div>
+        <div class="progress-bar"><div class="progress-fill" style="width:${pr.pct}%"></div></div></div>`).join('')}</div>`:''}
+      <div class="card-footer"><span class="card-date">${p.date||''}</span></div>
+    </a>`).join('');
 }
 
-async function renderKB() {
-  const g = document.getElementById('kb-grid');
-  // Read categories from GitHub (real .md files)
-  const folders = await LabAPI.list('Knowledge-Base');
-  if (!folders.length) {
-    g.innerHTML=`<div style="color:var(--text-dim);font-size:12px;grid-column:1/-1;">Noch keine Kategorien — <a href="kb.html" style="color:var(--accent);">Knowledge Base öffnen</a></div>`;
-    return;
-  }
-  // Load note count per category
-  const cats = await Promise.all(folders.map(async f => {
-    const metaFile = await LabAPI.readfile(`${f.path}/__meta.json`);
-    let icon = '📝';
-    if (metaFile.content) { try { icon = JSON.parse(metaFile.content).icon || '📝'; } catch(e) {} }
-    const files = await LabAPI.listfiles(`Knowledge-Base/${f.name}`);
-    const noteCount = files.filter(x => x.name !== '__meta.json' && x.name !== '.gitkeep').length;
-    return { name: f.name, icon, noteCount };
-  }));
-  g.innerHTML = cats.map(cat =>
-    `<a href="kb.html" class="kb-card"><div class="kb-icon">${cat.icon}</div><div class="kb-title">${esc(cat.name)}</div><div class="kb-count"><span>${cat.noteCount}</span> Notiz${cat.noteCount!==1?'en':''}</div></a>`
-  ).join('');
-}
-
-function renderExport() {
-  const g = document.getElementById('export-grid');
-  let h = `
+// ── EXPORT ──
+function renderExport(projects){
+  document.getElementById('export-grid').innerHTML=projects.map(p=>`
     <div class="export-card">
-      <div class="export-icon">🌐</div>
-      <div class="export-title">Gesamter Kontext</div>
-      <div class="export-desc">Alle Projekte + alle KB-Notizen. Für eine frische Session ohne Vorwissen.</div>
-      <button class="export-btn eb-green" onclick="exportCtx('all')">↓ context-all.md</button>
-    </div>`;
-  projects.forEach(p=>{
-    h+=`<div class="export-card">
-      <div class="export-icon">${p.icon}</div>
+      <div class="export-icon">${p.icon||'📦'}</div>
       <div class="export-title">${esc(p.name)}</div>
-      <div class="export-desc">Fortschritt, Docs und verknüpfte KB-Notizen für dieses Projekt.</div>
-      <button class="export-btn eb-amber" onclick="exportCtx('${p.id}')">↓ context-${slugify(p.name)}.md</button>
-    </div>`;
-  });
-  g.innerHTML = h;
-}
-
-// ═══════════════════════════════════════════
-// PROJECT CRUD
-// ═══════════════════════════════════════════
-function statusLabel(s){return s==='wip'?'⚡ In Arbeit':s==='done'?'✓ Fertig':'○ Geplant';}
-
-function openAddProject(){
-  if(!LabAPI.isOwner()){LabAPI.login();return;}
-  editingId=null; selIcon='⚡'; pRows=[{label:'',pct:0}];
-  document.getElementById('modal-project-title').textContent='Neues Projekt';
-  ['proj-name','proj-date','proj-tags','proj-desc'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('proj-status').value='wip';
-  renderIconGrid(); renderPEditor();
-  openModal('modal-project');
-  setTimeout(()=>document.getElementById('proj-name').focus(),100);
-}
-
-function openEdit(id){
-  if(!LabAPI.isOwner()){LabAPI.login();return;}
-  editingId=id;
-  const p=projects.find(x=>x.id===id);
-  selIcon=p.icon; pRows=(p.progress||[]).map(r=>({...r}));
-  document.getElementById('modal-project-title').textContent='Projekt bearbeiten';
-  document.getElementById('proj-name').value=p.name;
-  document.getElementById('proj-status').value=p.status;
-  document.getElementById('proj-date').value=p.date||'';
-  document.getElementById('proj-tags').value=(p.tags||[]).join(', ');
-  document.getElementById('proj-desc').value=p.desc||'';
-  renderIconGrid(); renderPEditor();
-  openModal('modal-project');
-}
-
-function renderIconGrid(){
-  document.getElementById('proj-icon-grid').innerHTML=ICONS.map(i=>
-    `<div class="icon-opt${i===selIcon?' sel':''}" onclick="pickIcon('${i}')">${i}</div>`
-  ).join('');
-}
-
-function pickIcon(i){selIcon=i;renderIconGrid();}
-
-function renderPEditor(){
-  document.getElementById('progress-editor').innerHTML=pRows.map((r,i)=>`
-    <div class="progress-row">
-      <input class="p-input" value="${esc(r.label)}" placeholder="Schritt-Bezeichnung" oninput="pRows[${i}].label=this.value"/>
-      <input class="p-pct" type="number" min="0" max="100" value="${r.pct}" oninput="pRows[${i}].pct=parseInt(this.value)||0"/>
-      <button class="p-del" onclick="rmPRow(${i})">✕</button>
+      <div class="export-desc">${esc(p.desc||'Projektkontext für KI-Gespräche exportieren.')}</div>
+      <button class="export-btn eb-green" onclick="exportProject('${p.id}')">⬇ Markdown exportieren</button>
     </div>`).join('');
 }
 
-function addProgressRow(){pRows.push({label:'',pct:0});renderPEditor();}
-function rmPRow(i){pRows.splice(i,1);renderPEditor();}
-
-async function saveProject(){
-  const name=document.getElementById('proj-name').value.trim();
-  if(!name){document.getElementById('proj-name').focus();return;}
-  const p={
-    id:editingId||('proj-'+Date.now()),
-    icon:selIcon, name,
-    status:document.getElementById('proj-status').value,
-    date:document.getElementById('proj-date').value.trim(),
-    tags:document.getElementById('proj-tags').value.split(',').map(t=>t.trim()).filter(Boolean),
-    desc:document.getElementById('proj-desc').value.trim(),
-    progress:pRows.filter(r=>r.label.trim()).map(r=>({label:r.label.trim(),pct:Math.min(100,Math.max(0,r.pct))}))
-  };
-  if(editingId){const i=projects.findIndex(x=>x.id===editingId);projects[i]=p;}
-  else projects.push(p);
-  await LabAPI.write('projects', projects);
-  closeModal('modal-project');
-  render();
+function exportProject(id){
+  const p=(JSON.parse(localStorage.getItem('cache-projects')||'[]')).find(x=>x.id===id);
+  if(!p)return;
+  const md=`# ${p.icon||''} ${p.name}\n\n**Status:** ${p.status}\n**Datum:** ${p.date||'—'}\n\n## Beschreibung\n${p.desc||'—'}\n\n## Tech\n${(p.chips||[]).join(', ')||'—'}\n\n## Fortschritt\n${(p.progress||[]).map(pr=>`- ${pr.label}: ${pr.pct}%`).join('\n')||'—'}\n`;
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([md],{type:'text/markdown'}));a.download=`${p.name.replace(/\s+/g,'-').toLowerCase()}-kontext.md`;a.click();
 }
 
-function confirmDel(id){
-  const p=projects.find(x=>x.id===id);
-  document.getElementById('confirm-title').textContent=`"${p.name}" löschen?`;
-  document.getElementById('confirm-sub').textContent='Das Projekt wird unwiderruflich entfernt. KB-Notizen und Docs bleiben erhalten.';
-  pendingConfirm=async()=>{
-    projects=projects.filter(x=>x.id!==id);
-    await LabAPI.write('projects', projects);
-    render();
-  };
-  document.getElementById('confirm-overlay').classList.add('open');
+// ── HERO STATS ──
+function renderHeroMeta(projects,compCount){
+  document.getElementById('hero-meta').innerHTML=`
+    <div class="meta-item"><div class="meta-label">Projekte</div><div class="meta-value"><span class="acc">${projects.length}</span></div></div>
+    <div class="meta-item"><div class="meta-label">In Arbeit</div><div class="meta-value"><span class="amb">${projects.filter(p=>p.status==='wip').length}</span></div></div>
+    <div class="meta-item"><div class="meta-label">Komponenten</div><div class="meta-value"><span class="acc">${compCount}</span></div></div>`;
 }
 
-// ═══════════════════════════════════════════
-// EXPORT
-// ═══════════════════════════════════════════
-
-function parseFM(raw) {
-  if (!raw || !raw.startsWith('---')) return { meta: {}, content: raw || '' };
-  const end = raw.indexOf('\n---', 3); if (end === -1) return { meta: {}, content: raw };
-  const yaml = raw.slice(4, end); const content = raw.slice(end + 4).trimStart();
-  const meta = {};
-  yaml.split('\n').forEach(line => {
-    const c = line.indexOf(':'); if (c === -1) return;
-    const k = line.slice(0, c).trim(); const v = line.slice(c + 1).trim();
-    if (v.startsWith('[') && v.endsWith(']')) meta[k] = v.slice(1, -1).split(',').map(s => s.trim()).filter(Boolean);
-    else meta[k] = v;
-  });
-  return { meta, content };
+// ── INIT ──
+async function init(){
+  const projects=await LabAPI.read('projects',[]);
+  const components=await LabAPI.read('components',[]);
+  renderProjects(projects);
+  renderExport(projects);
+  renderHeroMeta(projects,components.length);
+  document.getElementById('stat-comp').textContent=`${components.length} Bauteile`;
 }
 
-async function loadKBFromGitHub() {
-  const folders = await LabAPI.list('Knowledge-Base');
-  const cats = await Promise.all(folders.map(async f => {
-    const metaFile = await LabAPI.readfile(`${f.path}/__meta.json`);
-    let icon = '📝', projectIds = [];
-    if (metaFile.content) { try { const m = JSON.parse(metaFile.content); icon = m.icon||'📝'; projectIds = m.projectIds||[]; } catch(e) {} }
-    const files = await LabAPI.listfiles(`Knowledge-Base/${f.name}`);
-    const notes = await Promise.all(
-      files.filter(x => x.name !== '__meta.json' && x.name !== '.gitkeep').map(async file => {
-        const r = await LabAPI.readfile(file.path);
-        const { meta, content } = parseFM(r.content || '');
-        return { title: meta.title || file.name.replace(/\.md$/, ''), tags: meta.tags || [], content };
-      })
-    );
-    return { name: f.name, icon, projectIds, notes };
-  }));
-  return cats;
-}
-
-async function loadDocsFromGitHub() {
-  const folders = await LabAPI.list('Docs');
-  const docs = [];
-  await Promise.all(folders.map(async f => {
-    const files = await LabAPI.listfiles(`Docs/${f.name}`);
-    await Promise.all(files.filter(x => x.name !== '.gitkeep').map(async file => {
-      const r = await LabAPI.readfile(file.path);
-      const { meta, content } = parseFM(r.content || '');
-      docs.push({ projectId: f.name, title: meta.title || file.name.replace(/\.md$/, ''), version: meta.version || '', date: meta.date || '', content });
-    }));
-  }));
-  return docs;
-}
-
-async function exportCtx(type) {
-  const now = new Date().toLocaleDateString('de-DE', {day:'2-digit', month:'long', year:'numeric'});
-  let md = '';
-
-  if (type === 'all') {
-    const [kbCats, docs] = await Promise.all([loadKBFromGitHub(), loadDocsFromGitHub()]);
-    md += `# lab.notes — Vollständiger Kontext\n*${now}*\n\n---\n\n## Meine Projekte\n\n`;
-    projects.forEach(p => { md += fmtProject(p); });
-    md += `---\n\n## Knowledge Base\n\n` + fmtKBNew(kbCats, null);
-    md += `---\n\n## Docs\n\n` + fmtDocsNew(docs, null);
-    dl(md, 'context-all.md');
-  } else {
-    const p = projects.find(x => x.id === type); if (!p) return;
-    const [kbCats, docs] = await Promise.all([loadKBFromGitHub(), loadDocsFromGitHub()]);
-    md += `# lab.notes — ${p.name}\n*${now}*\n\n---\n\n` + fmtProject(p);
-    const linked = kbCats.filter(c => c.projectIds && c.projectIds.includes(p.id));
-    md += `---\n\n## Verknüpfte KB-Notizen\n\n` + fmtKBNew(linked.length > 0 ? linked : null, null, true);
-    md += `---\n\n## Docs\n\n` + fmtDocsNew(docs, p.id);
-    dl(md, `context-${slugify(p.name)}.md`);
-  }
-}
-
-function fmtProject(p){
-  let o=`### ${p.icon} ${p.name} (${statusLabel(p.status)})\n`;
-  if(p.date)o+=`*${p.date}*\n\n`;
-  if(p.desc)o+=`${p.desc}\n\n`;
-  if(p.tags&&p.tags.length)o+=`**Tags:** ${p.tags.join(', ')}\n\n`;
-  if(p.progress&&p.progress.length){o+=`**Fortschritt:**\n`;p.progress.forEach(s=>{o+=`- ${s.label}: ${s.pct}%\n`;});o+='\n';}
-  return o;
-}
-
-function fmtKBNew(cats, unused, alreadyFiltered) {
-  if (!cats || !cats.length) return '*Keine KB-Notizen verfügbar.*\n\n';
-  let o = '';
-  cats.forEach(cat => {
-    if (!cat.notes || !cat.notes.length) return;
-    o += `### ${cat.icon} ${cat.name}\n\n`;
-    cat.notes.forEach(n => {
-      o += `#### ${n.title}\n`;
-      if (n.tags && n.tags.length) o += `*Tags: ${n.tags.join(', ')}*\n\n`;
-      o += `${n.content}\n\n`;
-    });
-  });
-  return o || '*Keine KB-Notizen verfügbar.*\n\n';
-}
-
-function fmtDocsNew(docs, projectId) {
-  const entries = docs.filter(d => !projectId || d.projectId === projectId);
-  if (!entries.length) return '*Keine Docs-Einträge vorhanden.*\n\n';
-  return entries.map(d => `### ${d.title}${d.version ? ` (${d.version})` : ''}\n${d.date ? `*${d.date}*\n\n` : ''}${d.content}\n\n`).join('');
-}
-
-// ═══════════════════════════════════════════
-// UTILS
-// ═══════════════════════════════════════════
-function slugify(s){return s.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');}
-function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
-function dl(content,filename){const b=new Blob([content],{type:'text/markdown;charset=utf-8'});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=filename;a.click();URL.revokeObjectURL(u);}
-function openModal(id){document.getElementById(id).classList.add('open');}
-function closeModal(id){document.getElementById(id).classList.remove('open');}
-function closeConfirm(){document.getElementById('confirm-overlay').classList.remove('open');pendingConfirm=null;}
-
-document.getElementById('confirm-ok').onclick=()=>{if(pendingConfirm)pendingConfirm();closeConfirm();};
-document.querySelectorAll('.modal-overlay').forEach(el=>el.addEventListener('click',e=>{if(e.target===el)el.classList.remove('open');}));
-document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.modal-overlay.open,.confirm-overlay.open').forEach(el=>el.classList.remove('open'));});
-
-document.querySelectorAll('section[id]').forEach(s=>{
-  new IntersectionObserver(entries=>{
-    entries.forEach(e=>{
-      if(e.isIntersecting){
-        document.querySelectorAll('.nav-links a').forEach(l=>l.classList.remove('active'));
-        const lnk=document.querySelector(`.nav-links a[href="#${e.target.id}"]`);
-        if(lnk)lnk.classList.add('active');
-      }
-    });
-  },{threshold:0.3}).observe(s);
-});
-
-// Init
-LabAPI.init(updateAuthUI);
+LabAPI.init(u=>{updateAuthUI(u);init();});
 renderRecent();
 </script>
 </body>
