@@ -101,15 +101,17 @@ exports.handler = async (event) => {
       return respond(200, { email: user?.email || null, isOwner, permissions: {} });
     }
 
-    // /api?key=projects
-    if (key === 'projects') {
-      const res = await ghRequest('GET', `content/lab-data/projects.json?ref=${BRANCH}`);
-      if (res.status === 200 && res.body.content) {
-        const data = JSON.parse(Buffer.from(res.body.content, 'base64').toString());
-        return respond(200, { data, sha: res.body.sha });
-      }
-      return respond(200, { data: [], sha: null });
-    }
+   
+    // /api?key=<anything>
+
+if (key) {
+  const res = await ghRequest('GET', `content/lab-data/${key}.json?ref=${BRANCH}`);
+  if (res.status === 200 && res.body.content) {
+    const data = JSON.parse(Buffer.from(res.body.content, 'base64').toString());
+    return respond(200, { data, sha: res.body.sha });
+  }
+  return respond(200, { data: null, sha: null });
+}
 
     // /api?action=list&path=Knowledge-Base
     if (action === 'list') {
